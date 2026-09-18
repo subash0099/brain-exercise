@@ -2,443 +2,523 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Brain Exercise — Math Tug of War</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Mukta:wght@400;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --sky-top:#FFDE9C;
-    --sky-bottom:#FFB84C;
-    --ground:#7A9B57;
-    --ground-dark:#5E7A42;
-    --team-a:#E8543E;
-    --team-a-dark:#B93A28;
-    --team-b:#1F8A82;
-    --team-b-dark:#0F6961;
-    --rope:#8B5E34;
-    --ink:#2B241B;
-    --cream:#FFF6E6;
-    --flag:#F4C542;
+    --blue:#1F62C9;
+    --blue-soft:#3E84E6;
+    --red:#D93B3B;
+    --navy:#12386B;
+    --navy-deep:#0C2748;
+    --sky-1:#8FC7F0;
+    --sky-2:#C8E6F8;
+    --sand:#D9B98A;
+    --sand-dark:#BE9968;
+    --grass:#6FB23F;
+    --grass-dark:#4F8C2B;
+    --gold:#F5C542;
+    --gold-dark:#D19A16;
+    --green-ok:#3BA55D;
+    --ink:#0F2440;
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{
-    margin:0;padding:0;
-    font-family:'Mukta','Baloo 2',sans-serif;
-    background:linear-gradient(180deg,var(--sky-top) 0%, var(--sky-bottom) 55%, var(--ground) 55%, var(--ground-dark) 100%);
+    margin:0; padding:0;
+    width:100%; height:100%;
+    overflow:hidden;
+    background:var(--navy-deep);
+    font-family:'Quicksand',system-ui,sans-serif;
     color:var(--ink);
-    min-height:100vh;
-    overflow-x:hidden;
-  }
-  h1,h2,.headline{font-family:'Baloo 2',sans-serif;}
-
-  .wrap{
-    max-width:720px;
-    margin:0 auto;
-    padding:14px 12px 28px;
   }
 
-  .topbar{
+  /* The game lives on ONE fixed canvas (900 x 560).
+     JS scales that whole canvas to fit the screen it opens on,
+     so phone / tablet / laptop all see identical proportions. */
+  .viewport{
+    position:fixed; inset:0;
     display:flex;
     align-items:center;
-    justify-content:space-between;
-    margin-bottom:8px;
+    justify-content:center;
   }
-  .title{
-    font-size:clamp(20px,5.5vw,28px);
-    font-weight:800;
-    color:var(--ink);
-    text-shadow:0 2px 0 rgba(255,255,255,.35);
-  }
-  .round-badge{
-    background:var(--cream);
-    border:2px solid var(--ink);
-    border-radius:999px;
-    padding:5px 14px;
-    font-weight:700;
-    font-size:14px;
-    box-shadow:2px 2px 0 rgba(0,0,0,.15);
-  }
-
-  /* ARENA */
-  .arena{
+  .stage{
     position:relative;
-    background:var(--cream);
-    border:3px solid var(--ink);
+    width:900px;
+    height:560px;
+    flex:0 0 auto;
+    transform-origin:center center;
+    display:flex;
+    flex-direction:column;
     border-radius:18px;
-    padding:18px 10px 26px;
-    box-shadow:4px 5px 0 rgba(0,0,0,.18);
-    margin-bottom:14px;
     overflow:hidden;
-  }
-  .track{
-    position:relative;
-    height:110px;
-    margin:6px 0 16px;
-  }
-  .rope-line{
-    position:absolute;
-    top:50%;
-    left:6%;
-    right:6%;
-    height:10px;
-    background:repeating-linear-gradient(90deg, var(--rope) 0 14px, #6E4726 14px 16px);
-    transform:translateY(-50%);
-    border-radius:6px;
-    box-shadow:0 3px 0 rgba(0,0,0,.25) inset;
-  }
-  .pit{
-    position:absolute;
-    top:50%;
-    left:50%;
-    width:6px;
-    height:70px;
-    background:repeating-linear-gradient(180deg, transparent 0 4px, rgba(0,0,0,.18) 4px 8px);
-    transform:translate(-50%,-50%);
-  }
-  .knot{
-    position:absolute;
-    top:50%;
-    width:26px;height:26px;
-    background:var(--flag);
-    border:3px solid var(--ink);
-    border-radius:50%;
-    transform:translate(-50%,-50%);
-    transition:left .55s cubic-bezier(.34,1.56,.64,1);
-    box-shadow:2px 2px 0 rgba(0,0,0,.25);
-    z-index:3;
-  }
-  .zone-marker{
-    position:absolute;
-    top:50%;
-    width:3px;height:34px;
-    background:var(--ink);
-    opacity:.35;
-    transform:translate(-50%,-50%);
-  }
-  .fighter{
-    position:absolute;
-    top:50%;
-    font-size:44px;
-    transform:translate(-50%,-56%);
-    transition:left .55s cubic-bezier(.34,1.56,.64,1), transform .3s;
-    z-index:2;
-  }
-  .fighter.lean{ transform:translate(-50%,-56%) rotate(var(--tilt,0deg)); }
-  .fighter-a{ filter:none; }
-  .fighter-b{ transform:translate(-50%,-56%) scaleX(-1); }
-  .fighter-b.lean{ transform:translate(-50%,-56%) scaleX(-1) rotate(var(--tilt,0deg)); }
-
-  .scorebar{
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-  .meter{
-    flex:1;
-    height:16px;
-    background:#EADFC5;
-    border:2px solid var(--ink);
-    border-radius:999px;
-    position:relative;
-    overflow:hidden;
-  }
-  .meter-fill{
-    position:absolute;
-    top:0;bottom:0;
-    left:50%;
-    background:linear-gradient(90deg,var(--team-a),var(--team-b));
-    transition:width .5s ease, left .5s ease;
-  }
-  .meter-mid{
-    position:absolute;
-    left:50%;top:-3px;bottom:-3px;
-    width:2px;
-    background:var(--ink);
-    transform:translateX(-50%);
+    background:linear-gradient(180deg,
+      var(--sky-1) 0%, var(--sky-2) 33%,
+      var(--sand) 33%, var(--sand-dark) 63%,
+      var(--grass) 63%, var(--grass-dark) 100%);
+    box-shadow:0 10px 40px rgba(0,0,0,.45);
   }
 
-  /* PLAYER PANELS */
-  .panels{
+  /* ---------- TOP HUD ---------- */
+  .hud{
+    flex:0 0 96px;
     display:flex;
-    gap:10px;
+    align-items:flex-start;
+    gap:12px;
+    padding:10px 14px 0;
   }
-  .panel{
-    flex:1;
+  .team-card{
+    flex:1 1 0;
+    min-width:0;
     border-radius:16px;
-    border:3px solid var(--ink);
-    padding:10px 8px 12px;
-    text-align:center;
-    position:relative;
-    transition:transform .15s, box-shadow .15s;
+    padding:9px 16px 10px;
+    color:#fff;
+    box-shadow:0 4px 0 rgba(0,0,0,.28);
   }
-  .panel-a{ background:#FCE2DB; box-shadow:3px 4px 0 var(--team-a-dark); }
-  .panel-b{ background:#DCF0EC; box-shadow:3px 4px 0 var(--team-b-dark); }
-  .panel.win-flash{ animation:flashwin .55s ease; }
-  @keyframes flashwin{
-    0%{transform:scale(1);}
-    30%{transform:scale(1.05);}
-    100%{transform:scale(1);}
-  }
-  .panel-name{
-    font-family:'Baloo 2',sans-serif;
+  .team-a{ background:linear-gradient(180deg,var(--blue-soft),var(--blue)); }
+  .team-b{ background:linear-gradient(180deg,#E85C5C,var(--red)); text-align:right; }
+  .team-name{
+    font-family:'Fredoka',cursive;
     font-weight:800;
-    font-size:clamp(15px,4vw,18px);
-    margin-bottom:2px;
+    font-size:21px;
+    line-height:1.15;
   }
-  .panel-a .panel-name{ color:var(--team-a-dark); }
-  .panel-b .panel-name{ color:var(--team-b-dark); }
-
-  .question{
-    font-family:'Baloo 2',sans-serif;
+  .team-score{
+    font-size:14px;
     font-weight:700;
-    font-size:clamp(20px,6vw,26px);
-    background:var(--cream);
-    border:2px solid var(--ink);
-    border-radius:10px;
-    padding:6px 4px;
-    margin:6px 0 8px;
-    min-height:38px;
-    display:flex;align-items:center;justify-content:center;
+    opacity:.95;
+    line-height:1.3;
   }
-  .answer-display{
-    font-family:'Baloo 2',sans-serif;
-    font-weight:700;
-    font-size:20px;
-    background:#fff;
-    border:2px dashed var(--ink);
-    border-radius:8px;
-    min-height:34px;
-    display:flex;align-items:center;justify-content:center;
-    margin-bottom:8px;
-    letter-spacing:1px;
+  .pull-bar{
+    height:9px;
+    border-radius:99px;
+    background:rgba(0,0,0,.3);
+    overflow:hidden;
+    margin-top:5px;
   }
-  .answer-display.shake{ animation:shake .35s; border-color:#C0392B; color:#C0392B; }
-  @keyframes shake{
-    0%,100%{transform:translateX(0);}
-    25%{transform:translateX(-6px);}
-    75%{transform:translateX(6px);}
+  .pull-fill{
+    height:100%;
+    width:0%;
+    border-radius:99px;
+    transition:width .45s ease;
   }
+  .team-a .pull-fill{ background:linear-gradient(90deg,#8FE86B,#4FCB2F); }
+  .team-b .pull-fill{ background:linear-gradient(90deg,#FF8B6B,#FF5A3C); margin-left:auto; }
 
-  .keypad{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:5px;
+  .timer-pod{
+    flex:0 0 150px;
+    background:linear-gradient(180deg,#2C5A9E,var(--navy));
+    border-radius:16px;
+    padding:7px 14px 8px;
+    text-align:center;
+    color:#fff;
+    box-shadow:0 4px 0 rgba(0,0,0,.3);
   }
-  .key{
-    font-family:'Baloo 2',sans-serif;
-    font-weight:700;
-    font-size:16px;
-    padding:9px 0;
-    border-radius:8px;
-    border:2px solid var(--ink);
-    background:#fff;
-    cursor:pointer;
-    touch-action:manipulation;
-    user-select:none;
+  .timer-time{
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:26px;
+    line-height:1;
   }
-  .key:active{ transform:translateY(2px); }
-  .panel-a .key{ box-shadow:2px 2px 0 var(--team-a-dark); }
-  .panel-b .key{ box-shadow:2px 2px 0 var(--team-b-dark); }
-  .key.wide{ grid-column:span 3; }
-  .key.submit{ background:var(--flag); }
-  .key.clear{ background:#EEE; font-size:13px; }
-
-  .footer-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-top:12px;
-    gap:8px;
-  }
-  .timer-wrap{
-    flex:1;
-    height:10px;
-    background:#EADFC5;
-    border:2px solid var(--ink);
-    border-radius:999px;
+  .timer-label{ font-size:11px; opacity:.85; font-weight:700; margin-top:1px; }
+  .timer-track{
+    height:5px;
+    border-radius:99px;
+    background:rgba(0,0,0,.35);
+    margin-top:5px;
     overflow:hidden;
   }
   .timer-fill{
     height:100%;
-    background:var(--flag);
     width:100%;
+    background:var(--gold);
     transition:width .1s linear;
   }
-  .restart-btn{
-    font-family:'Baloo 2',sans-serif;
-    font-weight:700;
-    font-size:13px;
-    padding:6px 12px;
-    border-radius:999px;
-    border:2px solid var(--ink);
-    background:var(--cream);
+  .restart-mini{
+    display:block;
+    margin:6px auto 0;
+    font-family:'Quicksand',sans-serif;
+    font-size:11px;
+    font-weight:800;
+    padding:3px 12px;
+    border-radius:99px;
+    border:2px solid rgba(255,255,255,.55);
+    background:rgba(255,255,255,.14);
+    color:#fff;
     cursor:pointer;
-    box-shadow:2px 2px 0 rgba(0,0,0,.2);
+    white-space:nowrap;
+  }
+  .restart-mini:active{ transform:translateY(1px); }
+
+  /* ---------- ARENA ---------- */
+  .arena{
+    position:relative;
+    flex:1 1 auto;
+    min-height:0;
+  }
+  .flag{
+    position:absolute;
+    top:10px;
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:30px;
+    color:#fff;
+    width:58px; height:48px;
+    display:flex; align-items:center; justify-content:center;
+    clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%);
+    text-shadow:0 2px 3px rgba(0,0,0,.3);
+  }
+  .flag-a{ left:44px; background:var(--blue); }
+  .flag-b{ right:44px; background:var(--red); }
+  .flag::after{
+    content:'';
+    position:absolute;
+    left:-6px; top:0;
+    width:5px; height:135%;
+    background:#8A6A44;
+    border-radius:2px;
+  }
+  .flag-b::after{ left:auto; right:-6px; }
+
+  .q-card{
+    position:absolute;
+    top:0px;
+    background:#fff;
+    border:4px solid var(--blue);
+    border-radius:16px;
+    padding:6px 22px 9px;
+    text-align:center;
+    box-shadow:0 5px 0 rgba(0,0,0,.2);
+    min-width:180px;
+    z-index:5;
+  }
+  .q-card.q-b{ border-color:var(--red); }
+  .q-label{ font-size:12px; font-weight:700; color:#5A7391; line-height:1.2; }
+  .q-text{
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:30px;
+    line-height:1.15;
+    color:var(--navy);
+    white-space:nowrap;
+  }
+  .q-a{ left:150px; }
+  .q-b{ right:150px; }
+
+  .rope-zone{
+    position:absolute;
+    left:0; right:0;
+    bottom:34px;
+    height:0;
+  }
+  .rope{
+    position:absolute;
+    left:60px; right:60px;
+    top:0;
+    height:11px;
+    transform:translateY(-50%);
+    background:repeating-linear-gradient(72deg,#C79A5E 0 6px,#A87A42 6px 12px);
+    border-radius:99px;
+    box-shadow:inset 0 -2px 3px rgba(0,0,0,.28);
+  }
+  .ribbon{
+    position:absolute;
+    top:0;
+    width:26px; height:30px;
+    transform:translate(-50%,-52%);
+    transition:left .5s cubic-bezier(.34,1.4,.64,1);
+    z-index:4;
+    background:var(--red);
+    clip-path:polygon(50% 0,100% 18%,72% 55%,100% 100%,50% 62%,0 100%,28% 55%,0 18%);
+    filter:drop-shadow(0 3px 2px rgba(0,0,0,.35));
   }
 
-  /* WIN OVERLAY */
+  /* ---------- CONTROLS (bigger now that character space is freed up) ---------- */
+  .controls{
+    flex:0 0 270px;
+    display:flex;
+    gap:16px;
+    padding:8px 16px 14px;
+    background:linear-gradient(180deg,rgba(12,39,72,0) 0%, var(--navy-deep) 16%);
+  }
+  .pad-box{
+    flex:1 1 0;
+    min-width:0;
+    background:linear-gradient(180deg,#F4F8FE,#DCE8F7);
+    border:4px solid var(--blue);
+    border-radius:18px;
+    padding:8px 10px 10px;
+    box-shadow:0 5px 0 rgba(0,0,0,.3);
+  }
+  .pad-b{ border-color:var(--red); }
+  .pad-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:7px;
+  }
+  .pad-b .pad-head{ flex-direction:row-reverse; }
+  .pad-title{
+    font-size:14px;
+    font-weight:800;
+    color:var(--navy);
+    white-space:nowrap;
+  }
+  .answer-box{
+    flex:1 1 auto;
+    min-width:0;
+    background:#fff;
+    border:3px solid #B9CEE6;
+    border-radius:12px;
+    height:46px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Fredoka',cursive;
+    font-weight:700;
+    font-size:28px;
+    color:var(--navy);
+    letter-spacing:1px;
+  }
+  .answer-box.ok{ border-color:var(--green-ok); color:var(--green-ok); background:#EDFBF1; }
+  .answer-box.bad{ border-color:var(--red); color:var(--red); background:#FDEDED; animation:shake .3s; }
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    30%{transform:translateX(-7px);}
+    70%{transform:translateX(7px);}
+  }
+  .keypad{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:9px;
+  }
+  .key{
+    font-family:'Fredoka',cursive;
+    font-weight:700;
+    font-size:28px;
+    color:var(--navy);
+    background:#fff;
+    border:3px solid #C3D6EC;
+    border-radius:13px;
+    height:46px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    user-select:none;
+    touch-action:manipulation;
+    box-shadow:0 3px 0 #B0C6DF;
+  }
+  .key:active{ transform:translateY(3px); box-shadow:none; }
+  .key.back{ background:var(--navy); color:#fff; border-color:#071A31; box-shadow:0 3px 0 #071A31; font-size:22px; }
+  .key.go{ background:var(--green-ok); color:#fff; border-color:#2C8247; box-shadow:0 3px 0 #24693A; font-size:22px; }
+
+  .pad-box.flash{ animation:pop .5s ease; }
+  @keyframes pop{
+    0%{transform:scale(1);}
+    35%{transform:scale(1.03);}
+    100%{transform:scale(1);}
+  }
+
+  /* ---------- WIN OVERLAY ---------- */
   .overlay{
-    position:fixed;inset:0;
-    background:rgba(20,15,10,.55);
+    position:absolute; inset:0;
+    background:rgba(8,24,45,.74);
     display:none;
-    align-items:center;justify-content:center;
-    z-index:50;
-    padding:20px;
+    align-items:center;
+    justify-content:center;
+    z-index:60;
   }
   .overlay.show{ display:flex; }
   .win-card{
-    background:var(--cream);
-    border:4px solid var(--ink);
-    border-radius:20px;
-    padding:28px 24px;
+    background:linear-gradient(180deg,#F7FBFF,#DCE9F8);
+    border:5px solid var(--gold);
+    border-radius:22px;
+    padding:24px 40px 26px;
     text-align:center;
-    max-width:320px;
-    box-shadow:6px 6px 0 rgba(0,0,0,.3);
+    max-width:440px;
+    box-shadow:0 10px 0 rgba(0,0,0,.35);
   }
-  .win-card .emoji{ font-size:52px; }
+  .win-trophy{ font-size:58px; line-height:1; }
   .win-card h2{
-    font-size:26px;
+    font-family:'Fredoka',cursive;
+    font-size:30px;
     margin:8px 0 4px;
+    color:var(--navy);
   }
-  .win-card p{ margin:0 0 16px; font-size:14px; opacity:.8; }
+  .win-card p{ margin:0 0 16px; font-size:15px; color:#4C6A8C; font-weight:600; }
   .play-again{
-    font-family:'Baloo 2',sans-serif;
+    font-family:'Fredoka',cursive;
     font-weight:800;
-    font-size:16px;
-    padding:10px 22px;
-    border-radius:999px;
-    border:3px solid var(--ink);
-    background:var(--flag);
+    font-size:19px;
+    padding:11px 32px;
+    border-radius:99px;
+    border:4px solid var(--gold-dark);
+    background:var(--gold);
+    color:var(--navy);
     cursor:pointer;
-    box-shadow:3px 3px 0 rgba(0,0,0,.25);
+    box-shadow:0 5px 0 var(--gold-dark);
   }
-
-  .instructions{
-    text-align:center;
-    font-size:12.5px;
-    opacity:.75;
-    margin:6px 0 0;
-    line-height:1.5;
-  }
+  .play-again:active{ transform:translateY(4px); box-shadow:none; }
 </style>
 </head>
 <body>
 
-<div class="wrap">
-  <div class="topbar">
-    <div class="title">🧠 Brain Exercise</div>
-    <div class="round-badge" id="roundBadge">Round 1</div>
+<div class="viewport">
+<div class="stage" id="stage">
+
+  <div class="hud">
+    <div class="team-card team-a">
+      <div class="team-name">Team A</div>
+      <div class="team-score">Solved: <span id="solvedA">0</span></div>
+      <div class="pull-bar"><div class="pull-fill" id="pullA"></div></div>
+    </div>
+
+    <div class="timer-pod">
+      <div class="timer-time" id="timeText">00:10</div>
+      <div class="timer-label">Time left</div>
+      <div class="timer-track"><div class="timer-fill" id="timerFill"></div></div>
+      <button class="restart-mini" id="restartBtn">↻ Restart</button>
+    </div>
+
+    <div class="team-card team-b">
+      <div class="team-name">Team B</div>
+      <div class="team-score">Solved: <span id="solvedB">0</span></div>
+      <div class="pull-bar"><div class="pull-fill" id="pullB"></div></div>
+    </div>
   </div>
 
   <div class="arena">
-    <div class="track" id="track">
-      <div class="rope-line"></div>
-      <div class="pit"></div>
-      <div class="zone-marker" style="left:14%"></div>
-      <div class="zone-marker" style="left:86%"></div>
-      <div class="fighter fighter-a" id="fighterA" style="left:14%">🧑‍🦱</div>
-      <div class="fighter fighter-b" id="fighterB" style="left:86%">🧑‍🦰</div>
-      <div class="knot" id="knot" style="left:50%"></div>
+    <div class="flag flag-a">A</div>
+    <div class="flag flag-b">B</div>
+
+    <div class="q-card q-a">
+      <div class="q-label">Solve this</div>
+      <div class="q-text" id="qA">8 + 7 = ?</div>
     </div>
-    <div class="scorebar">
-      <div class="meter"><div class="meter-mid"></div><div class="meter-fill" id="meterFill"></div></div>
+    <div class="q-card q-b">
+      <div class="q-label">Solve this</div>
+      <div class="q-text" id="qB">6 × 3 = ?</div>
+    </div>
+
+    <div class="rope-zone">
+      <div class="rope"></div>
+      <div class="ribbon" id="ribbon" style="left:50%"></div>
     </div>
   </div>
 
-  <div class="panels">
-    <div class="panel panel-a" id="panelA">
-      <div class="panel-name">Team A</div>
-      <div class="question" id="qA">--</div>
-      <div class="answer-display" id="ansA"></div>
+  <div class="controls">
+    <div class="pad-box pad-a" id="padBoxA">
+      <div class="pad-head">
+        <div class="pad-title">Team A</div>
+        <div class="answer-box" id="ansA"></div>
+      </div>
       <div class="keypad" id="padA"></div>
     </div>
-    <div class="panel panel-b" id="panelB">
-      <div class="panel-name">Team B</div>
-      <div class="question" id="qB">--</div>
-      <div class="answer-display" id="ansB"></div>
+
+    <div class="pad-box pad-b" id="padBoxB">
+      <div class="pad-head">
+        <div class="pad-title">Team B</div>
+        <div class="answer-box" id="ansB"></div>
+      </div>
       <div class="keypad" id="padB"></div>
     </div>
   </div>
 
-  <div class="footer-row">
-    <div class="timer-wrap"><div class="timer-fill" id="timerFill"></div></div>
-    <button class="restart-btn" id="restartBtn">🔄 Restart</button>
+  <div class="overlay" id="overlay">
+    <div class="win-card">
+      <div class="win-trophy">🏆</div>
+      <h2 id="winTitle">Team A wins!</h2>
+      <p id="winSub">Pulled the ribbon all the way over.</p>
+      <button class="play-again" id="playAgainBtn">Play again</button>
+    </div>
   </div>
-</div>
 
-<div class="overlay" id="overlay">
-  <div class="win-card">
-    <div class="emoji" id="winEmoji">🏆</div>
-    <h2 id="winTitle">Team A Wins!</h2>
-    <p>Pulled the rope all the way to their side</p>
-    <button class="play-again" id="playAgainBtn">Play Again</button>
-  </div>
+</div>
 </div>
 
 <script>
 (function(){
+  // ---- play counter ----
+  (function trackPlay(){
+    try{
+      const key = location.origin + location.pathname;
+      fetch('https://hits-app.vercel.app/hits?url=' + encodeURIComponent(key) + '&json').catch(()=>{});
+    }catch(e){}
+  })();
+
   // ---- Telegram Mini App setup ----
   if(window.Telegram && window.Telegram.WebApp){
     const tg = window.Telegram.WebApp;
     tg.ready();
-    tg.expand();                     // open full height instead of half-sheet
-    try{ tg.disableVerticalSwipes(); }catch(e){}   // stop accidental swipe-to-close while playing
-    try{ tg.setHeaderColor('#FFB84C'); }catch(e){} // match the game's sky color
-    try{ tg.setBackgroundColor('#FFDE9C'); }catch(e){}
+    tg.expand();
+    try{ tg.disableVerticalSwipes(); }catch(e){}
+    try{ tg.setHeaderColor('#0C2748'); }catch(e){}
+    try{ tg.setBackgroundColor('#0C2748'); }catch(e){}
+    try{ tg.requestFullscreen(); }catch(e){}
   }
 
-  const LIMIT = 5;          // rope must reach -5 or +5 to win
-  const ROUND_TIME = 10000; // ms per round
+  // ---- FIT THE FIXED CANVAS TO ANY SCREEN ----
+  // The design size never changes, so nothing can overlap and nothing
+  // balloons on a big screen. Only the zoom level changes per device.
+  const DESIGN_W = 900, DESIGN_H = 560;
+  const MAX_SCALE = 1.3;   // keeps the keypad from getting huge on laptops
+  const stage = document.getElementById('stage');
 
-  let position = 0;         // -5..5, negative = A side, positive = B side
-  let round = 1;
+  function fitStage(){
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // A tall screen (phone held upright) gets the canvas turned sideways,
+    // so the player just rotates the phone and everything already fits.
+    const rotate = vh > vw;
+    const availW = rotate ? vh : vw;
+    const availH = rotate ? vw : vh;
+    let scale = Math.min(availW / DESIGN_W, availH / DESIGN_H) * 0.98;
+    scale = Math.min(scale, MAX_SCALE);
+    stage.style.transform = (rotate ? 'rotate(90deg) ' : '') + 'scale(' + scale + ')';
+  }
+  fitStage();
+  window.addEventListener('resize', fitStage);
+  window.addEventListener('orientationchange', function(){ setTimeout(fitStage, 200); });
+
+  // ---- game state ----
+  const LIMIT = 5;
+  const ROUND_TIME = 10000;
+
+  let position = 0;
   let roundActive = true;
+  let gameOver = false;
   let qA, qB;
   let answerA = '', answerB = '';
+  let solvedA = 0, solvedB = 0;
   let timerStart, timerRAF;
-  let gameOver = false;
 
-  const knot = document.getElementById('knot');
-  const fighterA = document.getElementById('fighterA');
-  const fighterB = document.getElementById('fighterB');
-  const meterFill = document.getElementById('meterFill');
-  const roundBadge = document.getElementById('roundBadge');
-  const qAEl = document.getElementById('qA');
-  const qBEl = document.getElementById('qB');
-  const ansAEl = document.getElementById('ansA');
-  const ansBEl = document.getElementById('ansB');
-  const panelA = document.getElementById('panelA');
-  const panelB = document.getElementById('panelB');
+  const ribbon    = document.getElementById('ribbon');
+  const qAEl      = document.getElementById('qA');
+  const qBEl      = document.getElementById('qB');
+  const ansAEl    = document.getElementById('ansA');
+  const ansBEl    = document.getElementById('ansB');
+  const padBoxA   = document.getElementById('padBoxA');
+  const padBoxB   = document.getElementById('padBoxB');
+  const pullA     = document.getElementById('pullA');
+  const pullB     = document.getElementById('pullB');
+  const solvedAEl = document.getElementById('solvedA');
+  const solvedBEl = document.getElementById('solvedB');
   const timerFill = document.getElementById('timerFill');
-  const overlay = document.getElementById('overlay');
-  const winTitle = document.getElementById('winTitle');
-  const winEmoji = document.getElementById('winEmoji');
-
-  function posToPercent(p){
-    return 50 + p * 7.2;
-  }
+  const timeText  = document.getElementById('timeText');
+  const overlay   = document.getElementById('overlay');
+  const winTitle  = document.getElementById('winTitle');
+  const winSub    = document.getElementById('winSub');
 
   function updateVisual(){
-    const pct = posToPercent(position);
-    knot.style.left = pct + '%';
-    fighterA.style.left = '14%';
-    fighterB.style.left = '86%';
-    const fillPct = Math.abs(position) / LIMIT * 50;
-    if(position <= 0){
-      meterFill.style.left = (50 - fillPct) + '%';
-      meterFill.style.width = fillPct + '%';
-    } else {
-      meterFill.style.left = '50%';
-      meterFill.style.width = fillPct + '%';
-    }
-  }
-
-  function leanFighter(el, deg){
-    el.classList.add('lean');
-    el.style.setProperty('--tilt', deg + 'deg');
-    setTimeout(()=>{ el.classList.remove('lean'); el.style.setProperty('--tilt','0deg'); }, 400);
+    ribbon.style.left = (50 + position * 7.2) + '%';
+    pullA.style.width = (Math.max(0, -position) / LIMIT * 100) + '%';
+    pullB.style.width = (Math.max(0,  position) / LIMIT * 100) + '%';
+    solvedAEl.textContent = solvedA;
+    solvedBEl.textContent = solvedB;
   }
 
   function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
@@ -460,7 +540,7 @@
       b = randInt(2,10); answer = randInt(2,12); a = b*answer;
       text = a+' ÷ '+b;
     }
-    return {text, answer: String(answer)};
+    return {text:text, answer:String(answer)};
   }
 
   function newRound(){
@@ -471,9 +551,8 @@
     qB = makeQuestion();
     qAEl.textContent = qA.text + ' = ?';
     qBEl.textContent = qB.text + ' = ?';
-    ansAEl.textContent = '';
-    ansBEl.textContent = '';
-    roundBadge.textContent = 'Round ' + round;
+    ansAEl.textContent = ''; ansAEl.className = 'answer-box';
+    ansBEl.textContent = ''; ansBEl.className = 'answer-box';
     startTimer();
   }
 
@@ -482,14 +561,10 @@
     timerStart = performance.now();
     function tick(now){
       if(!roundActive) return;
-      const elapsed = now - timerStart;
-      const pct = Math.max(0, 100 - (elapsed/ROUND_TIME)*100);
-      timerFill.style.width = pct + '%';
-      if(elapsed >= ROUND_TIME){
-        round++;
-        newRound();
-        return;
-      }
+      const left = Math.max(0, ROUND_TIME - (now - timerStart));
+      timerFill.style.width = (left / ROUND_TIME * 100) + '%';
+      timeText.textContent = '00:' + String(Math.ceil(left/1000)).padStart(2,'0');
+      if(left <= 0){ newRound(); return; }
       timerRAF = requestAnimationFrame(tick);
     }
     timerRAF = requestAnimationFrame(tick);
@@ -497,72 +572,74 @@
 
   function submitAnswer(side){
     if(!roundActive || gameOver) return;
-    const val = side === 'A' ? answerA : answerB;
-    const q = side === 'A' ? qA : qB;
+    const val   = side === 'A' ? answerA : answerB;
+    const q     = side === 'A' ? qA : qB;
     const ansEl = side === 'A' ? ansAEl : ansBEl;
     if(val === '') return;
+
     if(val === q.answer){
       roundActive = false;
       cancelAnimationFrame(timerRAF);
-      const panel = side === 'A' ? panelA : panelB;
-      panel.classList.add('win-flash');
-      setTimeout(()=>panel.classList.remove('win-flash'), 550);
+      ansEl.className = 'answer-box ok';
+      const box = side === 'A' ? padBoxA : padBoxB;
+      box.classList.add('flash');
+      setTimeout(function(){ box.classList.remove('flash'); }, 500);
+
       if(side === 'A'){
+        solvedA++;
         position = Math.max(-LIMIT, position - 1);
-        leanFighter(fighterA, -18);
-        leanFighter(fighterB, 10);
       } else {
+        solvedB++;
         position = Math.min(LIMIT, position + 1);
-        leanFighter(fighterB, 18);
-        leanFighter(fighterA, -10);
       }
       updateVisual();
-      round++;
-      setTimeout(()=>{
-        if(Math.abs(position) >= LIMIT){
-          endGame(position < 0 ? 'A' : 'B');
-        } else {
-          newRound();
-        }
-      }, 650);
+      setTimeout(function(){
+        if(Math.abs(position) >= LIMIT) endGame(position < 0 ? 'A' : 'B');
+        else newRound();
+      }, 620);
     } else {
-      ansEl.textContent = val + ' ✗';
-      ansEl.classList.add('shake');
-      setTimeout(()=>{
-        ansEl.classList.remove('shake');
-        if(side==='A'){ answerA=''; ansAEl.textContent=''; }
-        else { answerB=''; ansBEl.textContent=''; }
-      }, 350);
+      ansEl.textContent = val;
+      ansEl.className = 'answer-box bad';
+      setTimeout(function(){
+        ansEl.className = 'answer-box';
+        if(side === 'A'){ answerA = ''; ansAEl.textContent = ''; }
+        else { answerB = ''; ansBEl.textContent = ''; }
+      }, 340);
     }
   }
 
   function handleKey(side, key){
     if(!roundActive || gameOver) return;
-    if(side==='A'){
-      if(key==='clear') answerA='';
-      else if(key==='del') answerA = answerA.slice(0,-1);
-      else if(key==='ok') { submitAnswer('A'); return; }
+    if(side === 'A'){
+      if(key === 'del') answerA = answerA.slice(0,-1);
+      else if(key === 'ok'){ submitAnswer('A'); return; }
       else if(answerA.length < 4) answerA += key;
       ansAEl.textContent = answerA;
+      if(qA && answerA.length === qA.answer.length) submitAnswer('A');
     } else {
-      if(key==='clear') answerB='';
-      else if(key==='del') answerB = answerB.slice(0,-1);
-      else if(key==='ok') { submitAnswer('B'); return; }
+      if(key === 'del') answerB = answerB.slice(0,-1);
+      else if(key === 'ok'){ submitAnswer('B'); return; }
       else if(answerB.length < 4) answerB += key;
       ansBEl.textContent = answerB;
+      if(qB && answerB.length === qB.answer.length) submitAnswer('B');
     }
   }
 
   function buildPad(container, side){
     const keys = ['1','2','3','4','5','6','7','8','9','del','0','ok'];
     container.innerHTML = '';
-    keys.forEach(k=>{
+    keys.forEach(function(k){
       const btn = document.createElement('div');
       btn.className = 'key';
-      if(k==='del'){ btn.classList.add('clear'); btn.textContent='⌫'; }
-      else if(k==='ok'){ btn.classList.add('submit'); btn.textContent='✓'; }
+      if(k === 'del'){ btn.classList.add('back'); btn.textContent = '⌫'; }
+      else if(k === 'ok'){ btn.classList.add('go'); btn.textContent = '✓'; }
       else btn.textContent = k;
-      btn.addEventListener('click', ()=>handleKey(side, k));
+      // touchstart so two players tapping at the same instant both register
+      btn.addEventListener('touchstart', function(e){
+        e.preventDefault();
+        handleKey(side, k);
+      }, {passive:false});
+      btn.addEventListener('click', function(){ handleKey(side, k); });
       container.appendChild(btn);
     });
   }
@@ -571,13 +648,14 @@
     gameOver = true;
     roundActive = false;
     cancelAnimationFrame(timerRAF);
-    winTitle.textContent = winner === 'A' ? 'Team A Wins! 🎉' : 'Team B Wins! 🎉';
-    winEmoji.textContent = winner === 'A' ? '🟥🏆' : '🟦🏆';
+    winTitle.textContent = winner === 'A' ? 'Team A wins!' : 'Team B wins!';
+    winSub.textContent = 'Solved ' + (winner === 'A' ? solvedA : solvedB) + ' problems and pulled the ribbon across.';
     overlay.classList.add('show');
   }
 
   function resetGame(){
-    position = 0; round = 1; gameOver = false;
+    position = 0; gameOver = false;
+    solvedA = 0; solvedB = 0;
     updateVisual();
     overlay.classList.remove('show');
     newRound();
@@ -585,8 +663,8 @@
 
   buildPad(document.getElementById('padA'), 'A');
   buildPad(document.getElementById('padB'), 'B');
-  document.getElementById('restartBtn').addEventListener('click', resetGame);
   document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+  document.getElementById('restartBtn').addEventListener('click', resetGame);
 
   updateVisual();
   newRound();
