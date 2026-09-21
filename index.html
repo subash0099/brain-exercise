@@ -85,6 +85,9 @@
     font-weight:800;
     font-size:21px;
     line-height:1.15;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
   .team-score{
     font-size:14px;
@@ -139,7 +142,9 @@
   }
   .mini-btn-row{
     display:flex;
+    flex-wrap:wrap;
     gap:5px;
+    row-gap:4px;
     justify-content:center;
     margin-top:6px;
   }
@@ -167,29 +172,6 @@
     flex:1 1 auto;
     min-height:0;
   }
-  .flag{
-    position:absolute;
-    top:10px;
-    font-family:'Fredoka',cursive;
-    font-weight:800;
-    font-size:30px;
-    color:#fff;
-    width:58px; height:48px;
-    display:flex; align-items:center; justify-content:center;
-    clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%);
-    text-shadow:0 2px 3px rgba(0,0,0,.3);
-  }
-  .flag-a{ left:44px; background:var(--blue); }
-  .flag-b{ right:44px; background:var(--red); }
-  .flag::after{
-    content:'';
-    position:absolute;
-    left:-6px; top:0;
-    width:5px; height:135%;
-    background:#8A6A44;
-    border-radius:2px;
-  }
-  .flag-b::after{ left:auto; right:-6px; }
 
   .q-card{
     position:absolute;
@@ -274,6 +256,34 @@
     font-weight:800;
     color:var(--navy);
     white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:120px;
+  }
+  .pad-stage{ position:relative; }
+  .ai-think{
+    position:absolute; inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    text-align:center;
+    background:rgba(255,255,255,.95);
+    border-radius:14px;
+    font-family:'Fredoka',cursive;
+    font-weight:700;
+    font-size:14px;
+    color:var(--navy);
+    z-index:3;
+    padding:6px;
+  }
+  .ai-think.show{ display:flex; }
+  .ai-think .dots::after{
+    content:'.';
+    animation:dots 1.2s steps(4,end) infinite;
+  }
+  @keyframes dots{
+    0%{content:'.';} 33%{content:'..';} 66%{content:'...';} 100%{content:'.';}
   }
   .answer-box{
     flex:1 1 auto;
@@ -371,6 +381,59 @@
     box-shadow:0 5px 0 var(--gold-dark);
   }
   .play-again:active{ transform:translateY(4px); box-shadow:none; }
+  .share-btn{
+    display:block;
+    margin:12px auto 0;
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:15px;
+    padding:9px 22px;
+    border-radius:99px;
+    border:3px solid var(--navy);
+    background:linear-gradient(180deg,var(--blue-soft),var(--blue));
+    color:#fff;
+    cursor:pointer;
+    box-shadow:0 4px 0 var(--navy);
+  }
+  .share-btn:active{ transform:translateY(3px); box-shadow:none; }
+
+  /* ---------- MODE / NAME OVERLAYS ---------- */
+  .mode-card{ padding:22px 34px 26px; }
+  .mode-btns{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin-top:6px;
+  }
+  .mode-btn{
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:18px;
+    padding:13px 20px;
+    border-radius:16px;
+    border:none;
+    cursor:pointer;
+    color:#fff;
+    box-shadow:0 5px 0 rgba(0,0,0,.25);
+  }
+  .mode-btn:active{ transform:translateY(4px); box-shadow:none; }
+  .mode-btn-a{ background:linear-gradient(180deg,var(--blue-soft),var(--blue)); }
+  .mode-btn-b{ background:linear-gradient(180deg,#E85C5C,var(--red)); }
+  .mode-sub{ font-size:12px; opacity:.85; font-weight:600; margin-top:2px; }
+  .name-input{
+    width:100%;
+    font-family:'Quicksand',sans-serif;
+    font-weight:700;
+    font-size:17px;
+    text-align:center;
+    padding:11px 14px;
+    border-radius:12px;
+    border:3px solid #B9CEE6;
+    color:var(--navy);
+    margin:4px 0 16px;
+    outline:none;
+  }
+  .name-input:focus{ border-color:var(--blue); }
 </style>
 </head>
 <body>
@@ -380,7 +443,7 @@
 
   <div class="hud">
     <div class="team-card team-a">
-      <div class="team-name">Team A</div>
+      <div class="team-name" id="teamNameA">Team A</div>
       <div class="team-score">Solved: <span id="solvedA">0</span></div>
       <div class="pull-bar"><div class="pull-fill" id="pullA"></div></div>
     </div>
@@ -390,22 +453,19 @@
       <div class="timer-label">Time left</div>
       <div class="timer-track"><div class="timer-fill" id="timerFill"></div></div>
       <div class="mini-btn-row">
-        <button class="restart-mini" id="restartBtn">↻ Restart</button>
+        <button class="restart-mini" id="modeBtn">🔀 Mode</button>
         <button class="restart-mini" id="muteBtn">🔊</button>
       </div>
     </div>
 
     <div class="team-card team-b">
-      <div class="team-name">Team B</div>
+      <div class="team-name" id="teamNameB">Team B</div>
       <div class="team-score">Solved: <span id="solvedB">0</span></div>
       <div class="pull-bar"><div class="pull-fill" id="pullB"></div></div>
     </div>
   </div>
 
   <div class="arena">
-    <div class="flag flag-a">A</div>
-    <div class="flag flag-b">B</div>
-
     <div class="q-card q-a">
       <div class="q-label">Solve this</div>
       <div class="q-text" id="qA">8 + 7 = ?</div>
@@ -424,7 +484,7 @@
   <div class="controls">
     <div class="pad-box pad-a" id="padBoxA">
       <div class="pad-head">
-        <div class="pad-title">Team A</div>
+        <div class="pad-title" id="padTitleA">Team A</div>
         <div class="answer-box" id="ansA"></div>
       </div>
       <div class="keypad" id="padA"></div>
@@ -432,10 +492,13 @@
 
     <div class="pad-box pad-b" id="padBoxB">
       <div class="pad-head">
-        <div class="pad-title">Team B</div>
+        <div class="pad-title" id="padTitleB">Team B</div>
         <div class="answer-box" id="ansB"></div>
       </div>
-      <div class="keypad" id="padB"></div>
+      <div class="pad-stage">
+        <div class="keypad" id="padB"></div>
+        <div class="ai-think" id="aiThink">🤔 <span>Thinking<span class="dots"></span></span></div>
+      </div>
     </div>
   </div>
 
@@ -445,6 +508,29 @@
       <h2 id="winTitle">Team A wins!</h2>
       <p id="winSub">Pulled the ribbon all the way over.</p>
       <button class="play-again" id="playAgainBtn">Play again</button>
+      <button class="share-btn" id="shareBtn">Share &amp; Challenge a Friend</button>
+    </div>
+  </div>
+
+  <div class="overlay show" id="modeOverlay">
+    <div class="win-card mode-card">
+      <div class="win-trophy">🎮</div>
+      <h2>How do you want to play?</h2>
+      <p>Choose your mode</p>
+      <div class="mode-btns">
+        <button class="mode-btn mode-btn-a" id="btnFriend">Play with Friend</button>
+        <button class="mode-btn mode-btn-b" id="btnOnline">Play Online</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="nameOverlay">
+    <div class="win-card mode-card">
+      <div class="win-trophy">🧑</div>
+      <h2>What's your name?</h2>
+      <p class="mode-sub">This name will appear instead of Team A</p>
+      <input type="text" id="nameInput" class="name-input" placeholder="Enter your name" maxlength="14">
+      <button class="play-again" id="btnStartOnline">Start</button>
     </div>
   </div>
 
@@ -550,10 +636,29 @@
   // ---- game state ----
   const LIMIT = 5;
   const ROUND_TIME = 10000;
+  const INDIAN_NAMES = ['Rahul','Amit','Rohan','Vikram','Suresh','Ankit','Arjun','Karan','Manoj','Deepak',
+    'Sanjay','Nikhil','Priya','Neha','Pooja','Kavita','Sneha','Anjali','Ritu','Simran'];
+
+  let mode = null;          // 'friend' or 'online'
+  let playerName = 'You';
+  let opponentName = 'Rahul';
+  let aiTimeout = null;
+
+  // adaptive difficulty state (Play Online): AI speed reacts to how the user is doing
+  let wrongStreakA = 0;          // consecutive wrong tries by the user in THIS round
+  let aiHandicappedThisRound = false;
+  let helpUserNextRound = false; // if true, next round: easier for user, harder for AI
+  let userTimeSamples = [];      // recent correct-answer times for the user (ms)
+  let roundStartTime = 0;
+  let userGamesPlayed = 0;       // games started in Play Online, this session
+  let pityActive = false;        // when true, the AI can't quite land the finishing pull
+  let userCorrectCount = 0;      // this match: user's correct answers
+  let userWrongCount = 0;        // this match: user's wrong tries
+  let totalSolved = 0;           // this match: questions solved by BOTH sides combined — drives progression
 
   let position = 0;
   let roundActive = true;
-  let gameOver = false;
+  let gameOver = true;
   let qA, qB;
   let answerA = '', answerB = '';
   let solvedA = 0, solvedB = 0;
@@ -575,6 +680,18 @@
   const overlay   = document.getElementById('overlay');
   const winTitle  = document.getElementById('winTitle');
   const winSub    = document.getElementById('winSub');
+  const modeOverlay = document.getElementById('modeOverlay');
+  const nameOverlay = document.getElementById('nameOverlay');
+  const nameInput   = document.getElementById('nameInput');
+  const teamNameAEl = document.getElementById('teamNameA');
+  const teamNameBEl = document.getElementById('teamNameB');
+  const padTitleAEl = document.getElementById('padTitleA');
+  const padTitleBEl = document.getElementById('padTitleB');
+  const aiThinkEl   = document.getElementById('aiThink');
+
+  function showThinking(v){
+    aiThinkEl.classList.toggle('show', !!v);
+  }
 
   function updateVisual(){
     ribbon.style.left = (50 + position * 7.2) + '%';
@@ -586,37 +703,145 @@
 
   function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 
-  function makeQuestion(){
-    const ops = ['+','-','×','÷'];
-    const op = ops[randInt(0,3)];
+  function makeQuestion(level, tier){
+    level = level || 'normal';
+    tier = tier || 0;   // 0 = normal, 1 = harder (20+ solved), 2 = advanced ops unlocked (30+ solved)
+    const boost = tier >= 2 ? 1.8 : (tier >= 1 ? 1.35 : 1);
+
+    // Once the match has gone on a while, mix in square / cube / square-root questions
+    if(tier >= 2 && level !== 'easy' && Math.random() < 0.35) return makeAdvancedQuestion(level);
+
+    let op;
+    if(level === 'easy') op = Math.random() < 0.7 ? '+' : '-';
+    else if(level === 'hard') op = Math.random() < 0.6 ? (Math.random() < 0.5 ? '×' : '÷') : (Math.random() < 0.5 ? '+' : '-');
+    else op = ['+','-','×','÷'][randInt(0,3)];
+
     let a,b,answer,text;
     if(op === '+'){
-      a = randInt(2,30); b = randInt(2,30);
+      if(level === 'easy'){ a = randInt(2, Math.round(12*boost)); b = randInt(2, Math.round(12*boost)); }
+      else if(level === 'hard'){ a = randInt(15, Math.round(60*boost)); b = randInt(15, Math.round(60*boost)); }
+      else { a = randInt(2, Math.round(30*boost)); b = randInt(2, Math.round(30*boost)); }
       answer = a+b; text = a+' + '+b;
     } else if(op === '-'){
-      a = randInt(5,40); b = randInt(1,a);
+      if(level === 'easy'){ a = randInt(5, Math.round(15*boost)); b = randInt(1,a); }
+      else if(level === 'hard'){ a = randInt(30, Math.round(70*boost)); b = randInt(1,a); }
+      else { a = randInt(5, Math.round(40*boost)); b = randInt(1,a); }
       answer = a-b; text = a+' − '+b;
     } else if(op === '×'){
-      a = randInt(2,12); b = randInt(2,10);
+      if(level === 'easy'){ a = randInt(2, Math.round(6*boost)); b = randInt(2, Math.round(5*boost)); }
+      else if(level === 'hard'){ a = randInt(6, Math.round(15*boost)); b = randInt(6, Math.round(12*boost)); }
+      else { a = randInt(2, Math.round(12*boost)); b = randInt(2, Math.round(10*boost)); }
       answer = a*b; text = a+' × '+b;
     } else {
-      b = randInt(2,10); answer = randInt(2,12); a = b*answer;
+      if(level === 'easy'){ b = randInt(2, Math.round(5*boost)); answer = randInt(2, Math.round(6*boost)); a = b*answer; }
+      else if(level === 'hard'){ b = randInt(6, Math.round(12*boost)); answer = randInt(6, Math.round(14*boost)); a = b*answer; }
+      else { b = randInt(2, Math.round(10*boost)); answer = randInt(2, Math.round(12*boost)); a = b*answer; }
       text = a+' ÷ '+b;
     }
-    return {text:text, answer:String(answer)};
+    return {text:text, answer:String(answer), op:op, a:a, b:b};
+  }
+
+  function makeAdvancedQuestion(level){
+    const type = ['square','cube','sqrt'][randInt(0,2)];
+    const big = level === 'hard';
+    let a, answer, text, op;
+    if(type === 'square'){
+      a = big ? randInt(11,20) : randInt(2,15); answer = a*a; text = a+'²'; op = 'sq';
+    } else if(type === 'cube'){
+      a = big ? randInt(6,10) : randInt(2,8); answer = a*a*a; text = a+'³'; op = 'cube';
+    } else {
+      a = big ? randInt(11,18) : randInt(2,15); answer = a; text = '√'+(a*a); op = 'sqrt';
+    }
+    return {text:text, answer:String(answer), op:op, a:a, b:0};
+  }
+
+  // Progression: as the match goes on, questions gradually get harder for BOTH
+  // players, in both Play with Friend and Play Online — then advanced ops unlock.
+  function currentTier(){
+    if(totalSolved >= 30) return 2;   // square / cube / square-root start appearing
+    if(totalSolved >= 20) return 1;   // bigger numbers on the standard ops
+    return 0;
   }
 
   function newRound(){
     if(gameOver) return;
     roundActive = true;
     answerA = ''; answerB = '';
-    qA = makeQuestion();
-    qB = makeQuestion();
+    wrongStreakA = 0;
+    aiHandicappedThisRound = false;
+    roundStartTime = performance.now();
+
+    let levelA = 'normal', levelB = 'normal';
+    if(mode === 'online' && helpUserNextRound){
+      levelA = 'easy';   // user was struggling last round — give them a breather
+      levelB = 'hard';   // AI genuinely gets a harder sum, which naturally slows it down
+      helpUserNextRound = false;
+    }
+    const tier = currentTier();
+    qA = makeQuestion(levelA, tier);
+    qB = makeQuestion(levelB, tier);
     qAEl.textContent = qA.text + ' = ?';
     qBEl.textContent = qB.text + ' = ?';
     ansAEl.textContent = ''; ansAEl.className = 'answer-box';
     ansBEl.textContent = ''; ansBEl.className = 'answer-box';
     startTimer();
+    if(mode === 'online') scheduleAI(levelB === 'hard');
+    else showThinking(false);
+  }
+
+  // ---- AI opponent (Play Online mode) : speed adapts to how the user is actually playing ----
+  // Genuinely randomized — no fixed "addition = X seconds" rule, so it doesn't
+  // feel mechanical. Slightly weighted by how big the numbers are and by how
+  // the user is doing, but the spread is wide enough that no two questions
+  // (even the same type) play out the same way.
+  function aiThinkTime(q, assist){
+    const totalTries = userCorrectCount + userWrongCount;
+    const missRate = totalTries ? (userWrongCount / totalTries) : 0;
+
+    const digits = String(q.a).length + (q.b ? String(q.b).length : 0);
+    let baseTime = randInt(1800, 6200) + digits * randInt(250, 550);
+    baseTime += missRate * randInt(700, 2600);           // user struggling → AI eases off, unpredictably
+    if(assist) baseTime += 1800 + randInt(300, 2200);     // mid-round comeback assist
+    const extraSlip = missRate * 0.35;
+
+    return { time: Math.max(1200, Math.min(baseTime, 12000)), extraSlip: extraSlip };
+  }
+
+  function scheduleAI(assist){
+    clearTimeout(aiTimeout);
+    if(mode !== 'online') return;
+    showThinking(true);
+    const think = aiThinkTime(qB, assist);
+    const baseTime = think.time;
+    const makesSlip = Math.random() < Math.min(0.85, (assist ? 0.55 : 0.22) + think.extraSlip);
+
+    if(makesSlip){
+      const slipDelay = Math.max(600, baseTime - 900);
+      aiTimeout = setTimeout(function(){
+        if(!roundActive || gameOver || mode !== 'online') return;
+        const correctNum = parseInt(qB.answer, 10);
+        const delta = randInt(1,3) * (Math.random() < 0.5 ? -1 : 1);
+        const wrongVal = String(Math.max(0, correctNum + delta));
+        answerB = wrongVal;
+        ansBEl.textContent = wrongVal;
+        submitAnswer('B');
+        aiTimeout = setTimeout(function(){
+          if(!roundActive || gameOver || mode !== 'online') return;
+          answerB = qB.answer;
+          ansBEl.textContent = answerB;
+          showThinking(false);
+          submitAnswer('B');
+        }, 500 + randInt(200,600));
+      }, slipDelay);
+    } else {
+      aiTimeout = setTimeout(function(){
+        if(!roundActive || gameOver || mode !== 'online') return;
+        answerB = qB.answer;
+        ansBEl.textContent = answerB;
+        showThinking(false);
+        submitAnswer('B');
+      }, baseTime);
+    }
   }
 
   let lastTickSec = -1;
@@ -645,6 +870,19 @@
     if(val === '') return;
 
     if(val === q.answer){
+      // Pity guard: after a couple of losses in a row, the AI just can't quite
+      // land the finishing pull this game — keeps things from feeling unfair.
+      if(side === 'B' && pityActive && (position + 1) >= LIMIT){
+        SFX.wrong();
+        ansEl.textContent = val;
+        ansEl.className = 'answer-box bad';
+        setTimeout(function(){
+          ansEl.className = 'answer-box';
+          answerB = ''; ansBEl.textContent = '';
+        }, 340);
+        return;
+      }
+
       roundActive = false;
       cancelAnimationFrame(timerRAF);
       SFX.correct();
@@ -656,10 +894,18 @@
       if(side === 'A'){
         solvedA++;
         position = Math.max(-LIMIT, position - 1);
+        wrongStreakA = 0;
+        userCorrectCount++;
+        const elapsed = performance.now() - roundStartTime;
+        userTimeSamples.push(elapsed);
+        if(userTimeSamples.length > 5) userTimeSamples.shift();
+        // From the 3rd game onward, playing well enough (25+ solved) earns the win
+        if(mode === 'online' && userGamesPlayed >= 3 && solvedA >= 25) pityActive = true;
       } else {
         solvedB++;
         position = Math.min(LIMIT, position + 1);
       }
+      totalSolved++;
       updateVisual();
       setTimeout(function(){
         if(Math.abs(position) >= LIMIT) endGame(position < 0 ? 'A' : 'B');
@@ -669,6 +915,14 @@
       SFX.wrong();
       ansEl.textContent = val;
       ansEl.className = 'answer-box bad';
+      if(side === 'A'){
+        wrongStreakA++;
+        userWrongCount++;
+        if(wrongStreakA >= 2 && mode === 'online' && !aiHandicappedThisRound && roundActive){
+          aiHandicappedThisRound = true;
+          helpUserNextRound = true; // next round: easier question for the user, harder for the AI
+        }
+      }
       setTimeout(function(){
         ansEl.className = 'answer-box';
         if(side === 'A'){ answerA = ''; ansAEl.textContent = ''; }
@@ -679,6 +933,7 @@
 
   function handleKey(side, key){
     if(!roundActive || gameOver) return;
+    if(side === 'B' && mode === 'online') return; // AI controls this side in online mode
     if(key !== 'ok') SFX.key();
     if(side === 'A'){
       if(key === 'del') answerA = answerA.slice(0,-1);
@@ -718,8 +973,11 @@
     gameOver = true;
     roundActive = false;
     cancelAnimationFrame(timerRAF);
+    clearTimeout(aiTimeout);
+    showThinking(false);
     SFX.win();
-    winTitle.textContent = winner === 'A' ? 'Team A wins!' : 'Team B wins!';
+    const winnerName = winner === 'A' ? teamNameAEl.textContent : teamNameBEl.textContent;
+    winTitle.textContent = winnerName + ' wins!';
     winSub.textContent = 'Solved ' + (winner === 'A' ? solvedA : solvedB) + ' problems and pulled the ribbon across.';
     overlay.classList.add('show');
   }
@@ -727,15 +985,63 @@
   function resetGame(){
     position = 0; gameOver = false;
     solvedA = 0; solvedB = 0;
+    wrongStreakA = 0; aiHandicappedThisRound = false; helpUserNextRound = false;
+    userTimeSamples = [];
+    userCorrectCount = 0; userWrongCount = 0; totalSolved = 0;
+
+    if(mode === 'online'){
+      userGamesPlayed++;
+      // The user's very first game plays out naturally. Their 2nd game is a
+      // guaranteed win (keeps a brand-new player from bouncing off a loss
+      // streak). From the 3rd game on, a win has to be earned — see the
+      // 25-solved check in submitAnswer.
+      pityActive = (userGamesPlayed === 2);
+    } else {
+      pityActive = false;
+    }
     updateVisual();
     overlay.classList.remove('show');
     newRound();
   }
 
+  function setMode(m){
+    mode = m;
+    if(m === 'friend'){
+      teamNameAEl.textContent = 'Team A';
+      teamNameBEl.textContent = 'Team B';
+      padTitleAEl.textContent = 'Team A';
+      padTitleBEl.textContent = 'Team B';
+      padBoxB.classList.remove('ai-mode');
+    } else {
+      teamNameAEl.textContent = playerName;
+      teamNameBEl.textContent = opponentName;
+      padTitleAEl.textContent = playerName;
+      padTitleBEl.textContent = opponentName;
+      padBoxB.classList.add('ai-mode');
+    }
+    modeOverlay.classList.remove('show');
+    nameOverlay.classList.remove('show');
+    resetGame();
+  }
+
   buildPad(document.getElementById('padA'), 'A');
   buildPad(document.getElementById('padB'), 'B');
   document.getElementById('playAgainBtn').addEventListener('click', resetGame);
-  document.getElementById('restartBtn').addEventListener('click', resetGame);
+
+  function shareScore(){
+    const solved = solvedA;
+    const text = 'I solved ' + solved + ' questions in Brain Exercise: Math Tug of War! Can you beat my score?';
+    const url = 'https://t.me/Mathtugofwar_bot';
+    const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
+    if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink){
+      window.Telegram.WebApp.openTelegramLink(shareUrl);
+    } else if(navigator.share){
+      navigator.share({ title:'Brain Exercise', text:text, url:url }).catch(function(){});
+    } else {
+      window.open(shareUrl, '_blank');
+    }
+  }
+  document.getElementById('shareBtn').addEventListener('click', shareScore);
 
   const muteBtn = document.getElementById('muteBtn');
   muteBtn.addEventListener('click', function(){
@@ -745,8 +1051,37 @@
     else { muteBtn.textContent = '🔇'; muteBtn.classList.add('muted'); }
   });
 
+  // ---- mode selection ----
+  document.getElementById('btnFriend').addEventListener('click', function(){
+    SFX.unlock();
+    setMode('friend');
+  });
+  document.getElementById('btnOnline').addEventListener('click', function(){
+    SFX.unlock();
+    modeOverlay.classList.remove('show');
+    nameOverlay.classList.add('show');
+    setTimeout(function(){ nameInput.focus(); }, 200);
+  });
+  function startOnline(){
+    const val = nameInput.value.trim();
+    playerName = val ? val.slice(0,14) : 'Aap';
+    opponentName = INDIAN_NAMES[randInt(0, INDIAN_NAMES.length - 1)];
+    setMode('online');
+  }
+  document.getElementById('btnStartOnline').addEventListener('click', startOnline);
+  nameInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') startOnline(); });
+
+  document.getElementById('modeBtn').addEventListener('click', function(){
+    cancelAnimationFrame(timerRAF);
+    clearTimeout(aiTimeout);
+    showThinking(false);
+    gameOver = true;
+    overlay.classList.remove('show');
+    nameOverlay.classList.remove('show');
+    modeOverlay.classList.add('show');
+  });
+
   updateVisual();
-  newRound();
 })();
 </script>
 
