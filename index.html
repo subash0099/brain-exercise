@@ -655,6 +655,9 @@
   let userCorrectCount = 0;      // this match: user's correct answers
   let userWrongCount = 0;        // this match: user's wrong tries
   let totalSolved = 0;           // this match: questions solved by BOTH sides combined — drives progression
+  let userRoundStreak = 0;       // consecutive ROUNDS the user has solved first
+  let userMissStreak = 0;        // consecutive ROUNDS the user has failed to solve
+  let hardBurstRounds = 0;       // remaining rounds where the user's own question is deliberately hard
 
   let position = 0;
   let roundActive = true;
@@ -776,6 +779,9 @@
       levelA = 'easy';   // user was struggling last round — give them a breather
       levelB = 'hard';   // AI genuinely gets a harder sum, which naturally slows it down
       helpUserNextRound = false;
+    } else if(mode === 'online' && hardBurstRounds > 0){
+      levelA = 'hard';   // early hot streak — challenge the user for a couple of rounds
+      hardBurstRounds--;
     }
     const tier = currentTier();
     qA = makeQuestion(levelA, tier);
@@ -856,7 +862,11 @@
       const secLeft = Math.ceil(left/1000);
       timeText.textContent = '00:' + String(secLeft).padStart(2,'0');
       if(secLeft <= 3 && secLeft !== lastTickSec){ lastTickSec = secLeft; SFX.tick(); }
-      if(left <= 0){ newRound(); return; }
+      if(left <= 0){
+        if(mode === 'online'){ userRoundStreak = 0; userMissStreak++; }
+        newRound();
+        return;
+      }
       timerRAF = requestAnimationFrame(tick);
     }
     timerRAF = requestAnimationFrame(tick);
@@ -901,9 +911,22 @@
         if(userTimeSamples.length > 5) userTimeSamples.shift();
         // From the 3rd game onward, playing well enough (25+ solved) earns the win
         if(mode === 'online' && userGamesPlayed >= 3 && solvedA >= 25) pityActive = true;
+
+        if(mode === 'online'){
+          userMissStreak = 0;
+          userRoundStreak++;
+          // Early hot streak (still under ~6-7 solved) — throw a couple of hard ones in
+          if(userRoundStreak >= 3 && solvedA <= 8) hardBurstRounds = 2;
+        }
       } else {
         solvedB++;
         position = Math.min(LIMIT, position + 1);
+        if(mode === 'online'){
+          userRoundStreak = 0;
+          userMissStreak++;
+          // Well into the match but cold for 3 rounds straight — let the AI actually close it out
+          if(userMissStreak >= 3 && solvedA > 20) pityActive = false;
+        }
       }
       totalSolved++;
       updateVisual();
@@ -988,6 +1011,7 @@
     wrongStreakA = 0; aiHandicappedThisRound = false; helpUserNextRound = false;
     userTimeSamples = [];
     userCorrectCount = 0; userWrongCount = 0; totalSolved = 0;
+    userRoundStreak = 0; userMissStreak = 0; hardBurstRounds = 0;
 
     if(mode === 'online'){
       userGamesPlayed++;
