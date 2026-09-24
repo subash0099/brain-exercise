@@ -127,6 +127,75 @@
     line-height:1;
   }
   .timer-label{ font-size:11px; opacity:.85; font-weight:700; margin-top:1px; }
+  .coin-strip{
+    flex:0 0 64px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    gap:6px;
+    padding-top:6px;
+  }
+  .coin-display{
+    background:linear-gradient(180deg,#2C5A9E,var(--navy));
+    color:var(--gold);
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:14px;
+    padding:5px 10px;
+    border-radius:99px;
+    box-shadow:0 3px 0 rgba(0,0,0,.3);
+    white-space:nowrap;
+  }
+  .reward-chip-btn{
+    font-size:20px;
+    line-height:1;
+    padding:5px 10px;
+    border-radius:99px;
+    border:2px solid rgba(255,255,255,.5);
+    background:linear-gradient(180deg,var(--gold),var(--gold-dark));
+    cursor:pointer;
+    box-shadow:0 3px 0 rgba(0,0,0,.3);
+  }
+  .reward-chip-btn:active{ transform:translateY(2px); box-shadow:none; }
+  .coin-toast{
+    position:absolute;
+    left:50%;
+    top:40%;
+    transform:translate(-50%,0);
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:20px;
+    color:var(--gold);
+    text-shadow:0 2px 3px rgba(0,0,0,.5);
+    pointer-events:none;
+    z-index:55;
+    opacity:0;
+  }
+  .coin-toast.fly{ animation:coinFly 1.1s ease forwards; }
+  @keyframes coinFly{
+    0%{ opacity:0; transform:translate(-50%,10px) scale(.8); }
+    20%{ opacity:1; transform:translate(-50%,-10px) scale(1.1); }
+    75%{ opacity:1; transform:translate(-50%,-46px) scale(1); }
+    100%{ opacity:0; transform:translate(-50%,-62px) scale(1); }
+  }
+  .badge-toast{
+    position:absolute;
+    left:50%; top:14px;
+    transform:translate(-50%,-70px);
+    background:linear-gradient(180deg,var(--gold),var(--gold-dark));
+    color:var(--navy);
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:14px;
+    padding:9px 20px;
+    border-radius:99px;
+    box-shadow:0 4px 0 rgba(0,0,0,.3);
+    z-index:70;
+    white-space:nowrap;
+    transition:transform .4s cubic-bezier(.34,1.4,.64,1);
+  }
+  .badge-toast.show{ transform:translate(-50%,0); }
   .timer-track{
     height:5px;
     border-radius:99px;
@@ -434,13 +503,84 @@
     outline:none;
   }
   .name-input:focus{ border-color:var(--blue); }
-  .search-video{
-    width:100%;
-    max-width:220px;
-    border-radius:16px;
-    margin:4px auto 14px;
-    display:block;
-    box-shadow:0 4px 14px rgba(0,0,0,.25);
+  .search-spinner{
+    width:52px; height:52px;
+    margin:4px auto 12px;
+    border:6px solid #DCE9F8;
+    border-top-color:var(--blue);
+    border-radius:50%;
+    animation:spin 0.85s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---------- REWARDS SCREEN ---------- */
+  .rewards-card{ padding:18px 22px 20px; max-width:520px; max-height:500px; overflow-y:auto; }
+  .rewards-coin-row{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    font-family:'Fredoka',cursive; font-weight:800; font-size:20px; color:var(--gold-dark);
+    margin-bottom:10px;
+  }
+  .rewards-section-title{
+    font-size:13px; font-weight:800; color:var(--navy); text-align:left;
+    margin:12px 0 8px; text-transform:uppercase; letter-spacing:.5px;
+  }
+  .ribbon-grid{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .ribbon-item{
+    width:110px;
+    border:3px solid #C3D6EC;
+    border-radius:14px;
+    padding:10px 6px 8px;
+    background:#fff;
+    cursor:pointer;
+  }
+  .ribbon-item.selected{ border-color:var(--green-ok); background:#EDFBF1; }
+  .ribbon-item.locked{ opacity:.6; cursor:pointer; }
+  .ribbon-swatch{
+    width:30px; height:34px;
+    margin:0 auto 6px;
+    clip-path:polygon(50% 0,100% 18%,72% 55%,100% 100%,50% 62%,0 100%,28% 55%,0 18%);
+  }
+  .ribbon-name{ font-size:12px; font-weight:800; color:var(--navy); }
+  .ribbon-cost{ font-size:11px; font-weight:700; color:var(--gold-dark); margin-top:2px; }
+  .ribbon-tag{ font-size:11px; font-weight:700; color:var(--green-ok); margin-top:2px; }
+
+  .badge-grid{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .badge-item{
+    width:96px;
+    border:3px solid #C3D6EC;
+    border-radius:14px;
+    padding:10px 4px 8px;
+    background:#fff;
+    text-align:center;
+  }
+  .badge-item.locked{ opacity:.45; filter:grayscale(1); }
+  .badge-icon{ font-size:26px; }
+  .badge-name{ font-size:11px; font-weight:800; color:var(--navy); margin-top:3px; line-height:1.2; }
+
+  .rewards-close{
+    display:block; margin:16px auto 0;
+    font-family:'Fredoka',cursive; font-weight:800; font-size:16px;
+    padding:9px 26px; border-radius:99px; border:3px solid var(--navy);
+    background:var(--navy); color:#fff; cursor:pointer;
+  }
+
+  /* ---------- CHANCE-EXHAUSTED OVERLAY ---------- */
+  .chance-btns{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+  .chance-btn{
+    font-family:'Fredoka',cursive; font-weight:800; font-size:16px;
+    padding:12px 18px; border-radius:14px; border:none; cursor:pointer; color:#fff;
+    box-shadow:0 4px 0 rgba(0,0,0,.25);
+  }
+  .chance-btn:active{ transform:translateY(3px); box-shadow:none; }
+  .chance-btn-coins{ background:linear-gradient(180deg,var(--gold),var(--gold-dark)); color:var(--navy); }
+  .chance-btn-coins:disabled{ opacity:.45; cursor:not-allowed; }
+  .chance-btn-ad{ background:linear-gradient(180deg,var(--blue-soft),var(--blue)); }
+
+  /* ---------- AD OVERLAY (simulated) ---------- */
+  .ad-ring{
+    width:64px; height:64px; margin:6px auto 14px;
+    border:7px solid #DCE9F8; border-top-color:var(--blue);
+    border-radius:50%; animation:spin 1s linear infinite;
   }
 </style>
 </head>
@@ -454,6 +594,11 @@
       <div class="team-name" id="teamNameA">Team A</div>
       <div class="team-score">Solved: <span id="solvedA">0</span></div>
       <div class="pull-bar"><div class="pull-fill" id="pullA"></div></div>
+    </div>
+
+    <div class="coin-strip">
+      <div class="coin-display" id="coinDisplay">🪙 <span id="coinCount">0</span></div>
+      <button class="reward-chip-btn" id="rewardsBtn">🎁</button>
     </div>
 
     <div class="timer-pod">
@@ -549,6 +694,45 @@
       <p class="mode-sub" id="searchSub">Hang tight, matching you with a player</p>
     </div>
   </div>
+
+  <div class="overlay" id="rewardsOverlay">
+    <div class="win-card rewards-card">
+      <div class="win-trophy">🎁</div>
+      <h2>Rewards</h2>
+      <div class="rewards-coin-row">🪙 <span id="rewardsCoinCount">0</span></div>
+
+      <div class="rewards-section-title">Ribbon Colors</div>
+      <div class="ribbon-grid" id="ribbonGrid"></div>
+
+      <div class="rewards-section-title">Badges</div>
+      <div class="badge-grid" id="badgeGrid"></div>
+
+      <button class="rewards-close" id="rewardsCloseBtn">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="chanceOverlay">
+    <div class="win-card mode-card">
+      <div class="win-trophy">😅</div>
+      <h2>Out of chances!</h2>
+      <p class="mode-sub">You've used all 5 tries on this question. Get one more chance:</p>
+      <div class="chance-btns">
+        <button class="chance-btn chance-btn-coins" id="chanceUseCoinsBtn">🪙 Use 25 Coins</button>
+        <button class="chance-btn chance-btn-ad" id="chanceWatchAdBtn">📺 Watch Ad (+25 coins)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="adOverlay">
+    <div class="win-card mode-card">
+      <div class="ad-ring"></div>
+      <h2 id="adTitle">Ad playing...</h2>
+      <p class="mode-sub" id="adSub">Please wait 6s</p>
+    </div>
+  </div>
+
+  <div class="coin-toast" id="coinToast"></div>
+  <div class="badge-toast" id="badgeToast"></div>
 
 </div>
 </div>
@@ -660,6 +844,45 @@
   let opponentName = 'Rahul';
   let aiTimeout = null;
 
+  // ---- reward system: coins, ribbon unlocks, badges (persisted in localStorage) ----
+  const RIBBONS = [
+    { id:'red',     name:'Classic Red', cost:0,   color:'var(--red)' },
+    { id:'gold',    name:'Gold',        cost:100, color:'linear-gradient(160deg,#FFE9A0,#F5C542)' },
+    { id:'purple',  name:'Purple',      cost:250, color:'linear-gradient(160deg,#B98CF0,#7B3FD1)' },
+    { id:'rainbow', name:'Rainbow',     cost:500, color:'linear-gradient(160deg,#FF6B6B,#FFD166,#4FCB2F,#3E84E6,#B98CF0)' }
+  ];
+  const BADGES = [
+    { id:'firstWin',   name:'First Win',        icon:'🏅', check:function(s){ return s.careerWins >= 1; } },
+    { id:'tenWins',    name:'10 Wins',          icon:'🏆', check:function(s){ return s.careerWins >= 10; } },
+    { id:'fifty',      name:'50 Correct',       icon:'🧠', check:function(s){ return s.careerCorrect >= 50; } },
+    { id:'hundred',    name:'100 Correct',      icon:'💯', check:function(s){ return s.careerCorrect >= 100; } },
+    { id:'speed',      name:'Speed Solver',     icon:'⚡', check:function(s){ return !!s.gotSpeed; } },
+    { id:'perfect',    name:'Perfect Streak',   icon:'🔥', check:function(s){ return !!s.gotPerfect; } }
+  ];
+  const SAVE_KEY = 'brainExerciseSave';
+
+  function loadSave(){
+    let d;
+    try{ d = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}'); }catch(e){ d = {}; }
+    return {
+      coins: d.coins || 0,
+      unlockedRibbons: d.unlockedRibbons || ['red'],
+      selectedRibbon: d.selectedRibbon || 'red',
+      careerWins: d.careerWins || 0,
+      careerCorrect: d.careerCorrect || 0,
+      gotSpeed: !!d.gotSpeed,
+      gotPerfect: !!d.gotPerfect,
+      earnedBadges: d.earnedBadges || []
+    };
+  }
+  let save = loadSave();
+  function persistSave(){
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
+  }
+
+  let chancesLeftA = 5;          // wrong-attempt chances on the CURRENT question
+  let perfectStreakCount = 0;    // consecutive correct answers this match, no misses
+
   // adaptive difficulty state (Play Online): AI speed reacts to how the user is doing
   let wrongStreakA = 0;          // consecutive wrong tries by the user in THIS round
   let aiHandicappedThisRound = false;
@@ -668,6 +891,7 @@
   let roundStartTime = 0;
   let userGamesPlayed = 0;       // games started in Play Online, this session
   let pityActive = false;        // when true, the AI can't quite land the finishing pull
+  let pityBlocksUsed = 0;        // how many times pity has already blocked a finishing answer this match
   let userCorrectCount = 0;      // this match: user's correct answers
   let userWrongCount = 0;        // this match: user's wrong tries
   let totalSolved = 0;           // this match: questions solved by BOTH sides combined — drives progression
@@ -710,6 +934,136 @@
   const padTitleAEl = document.getElementById('padTitleA');
   const padTitleBEl = document.getElementById('padTitleB');
   const aiThinkEl   = document.getElementById('aiThink');
+  const coinCountEl = document.getElementById('coinCount');
+  const coinToastEl = document.getElementById('coinToast');
+  const badgeToastEl = document.getElementById('badgeToast');
+  const rewardsOverlay = document.getElementById('rewardsOverlay');
+  const rewardsCoinCountEl = document.getElementById('rewardsCoinCount');
+  const ribbonGridEl = document.getElementById('ribbonGrid');
+  const badgeGridEl = document.getElementById('badgeGrid');
+  const chanceOverlay = document.getElementById('chanceOverlay');
+  const adOverlay = document.getElementById('adOverlay');
+  const adTitleEl = document.getElementById('adTitle');
+  const adSubEl = document.getElementById('adSub');
+
+  // ---- coin + reward helpers ----
+  function updateCoinDisplay(){
+    coinCountEl.textContent = save.coins;
+    rewardsCoinCountEl.textContent = save.coins;
+  }
+  function showCoinToast(text, good){
+    coinToastEl.textContent = text;
+    coinToastEl.style.color = good ? 'var(--gold)' : 'var(--red)';
+    coinToastEl.classList.remove('fly'); void coinToastEl.offsetWidth;
+    coinToastEl.classList.add('fly');
+  }
+  function addCoins(n){
+    save.coins = Math.max(0, save.coins + n);
+    updateCoinDisplay();
+    persistSave();
+    if(n !== 0) showCoinToast((n > 0 ? '+' : '') + n + ' 🪙', n > 0);
+  }
+  function spendCoins(n){
+    if(save.coins < n) return false;
+    save.coins -= n;
+    updateCoinDisplay();
+    persistSave();
+    return true;
+  }
+  function applyRibbonColor(){
+    const r = RIBBONS.find(function(x){ return x.id === save.selectedRibbon; }) || RIBBONS[0];
+    ribbon.style.background = r.color;
+  }
+  function showBadgeToast(name){
+    badgeToastEl.textContent = '🏅 New Badge: ' + name + '!';
+    badgeToastEl.classList.add('show');
+    setTimeout(function(){ badgeToastEl.classList.remove('show'); }, 2400);
+  }
+  function checkBadges(){
+    BADGES.forEach(function(b){
+      if(save.earnedBadges.indexOf(b.id) === -1 && b.check(save)){
+        save.earnedBadges.push(b.id);
+        showBadgeToast(b.name);
+      }
+    });
+    persistSave();
+  }
+  function buildRewardsScreen(){
+    ribbonGridEl.innerHTML = '';
+    RIBBONS.forEach(function(r){
+      const owned = save.unlockedRibbons.indexOf(r.id) !== -1;
+      const selected = save.selectedRibbon === r.id;
+      const item = document.createElement('div');
+      item.className = 'ribbon-item' + (owned ? '' : ' locked') + (selected ? ' selected' : '');
+      item.innerHTML =
+        '<div class="ribbon-swatch" style="background:' + r.color + '"></div>' +
+        '<div class="ribbon-name">' + r.name + '</div>' +
+        (selected ? '<div class="ribbon-tag">Selected</div>' :
+          owned ? '<div class="ribbon-tag">Tap to select</div>' :
+          '<div class="ribbon-cost">🪙 ' + r.cost + '</div>');
+      item.addEventListener('click', function(){
+        if(save.unlockedRibbons.indexOf(r.id) !== -1){
+          save.selectedRibbon = r.id;
+          persistSave();
+          applyRibbonColor();
+          buildRewardsScreen();
+        } else if(spendCoins(r.cost)){
+          save.unlockedRibbons.push(r.id);
+          save.selectedRibbon = r.id;
+          persistSave();
+          applyRibbonColor();
+          buildRewardsScreen();
+        } else {
+          showCoinToast('Not enough coins', false);
+        }
+      });
+      ribbonGridEl.appendChild(item);
+    });
+
+    badgeGridEl.innerHTML = '';
+    BADGES.forEach(function(b){
+      const earned = save.earnedBadges.indexOf(b.id) !== -1;
+      const item = document.createElement('div');
+      item.className = 'badge-item' + (earned ? '' : ' locked');
+      item.innerHTML = '<div class="badge-icon">' + b.icon + '</div><div class="badge-name">' + b.name + '</div>';
+      badgeGridEl.appendChild(item);
+    });
+  }
+
+  // ---- chance-exhausted flow: spend coins or watch a (simulated) ad for one more try ----
+  function showChanceOverlay(){
+    cancelAnimationFrame(timerRAF);
+    roundActive = false;
+    const btn = document.getElementById('chanceUseCoinsBtn');
+    btn.disabled = save.coins < 25;
+    chanceOverlay.classList.add('show');
+  }
+  function resumeAfterChance(){
+    chanceOverlay.classList.remove('show');
+    chancesLeftA = 5;
+    answerA = ''; ansAEl.textContent = ''; ansAEl.className = 'answer-box';
+    roundActive = true;
+    startTimer();
+  }
+  function runSimulatedAd(){
+    chanceOverlay.classList.remove('show');
+    adOverlay.classList.add('show');
+    let secLeft = 6;
+    adTitleEl.textContent = 'Ad playing...';
+    adSubEl.textContent = 'Please wait ' + secLeft + 's';
+    const iv = setInterval(function(){
+      secLeft--;
+      if(secLeft > 0){
+        adSubEl.textContent = 'Please wait ' + secLeft + 's';
+      } else {
+        clearInterval(iv);
+        adOverlay.classList.remove('show');
+        addCoins(25);
+        spendCoins(25);
+        resumeAfterChance();
+      }
+    }, 1000);
+  }
 
   function showThinking(v){
     aiThinkEl.classList.toggle('show', !!v);
@@ -790,6 +1144,7 @@
     roundActive = true;
     answerA = ''; answerB = '';
     wrongStreakA = 0;
+    chancesLeftA = 5;
     aiHandicappedThisRound = false;
     roundStartTime = performance.now();
 
@@ -903,9 +1258,11 @@
     if(val === '') return;
 
     if(val === q.answer){
-      // Pity guard: after a couple of losses in a row, the AI just can't quite
-      // land the finishing pull this game — keeps things from feeling unfair.
-      if(side === 'B' && pityActive && (position + 1) >= LIMIT){
+      // Pity guard: eases the AI off the finishing pull a couple of times so a
+      // fresh player isn't steamrolled — but it can only block a HANDFUL of
+      // genuine correct finishes. Keep solving and the AI WILL close it out.
+      if(side === 'B' && pityActive && (position + 1) >= LIMIT && pityBlocksUsed < 2){
+        pityBlocksUsed++;
         SFX.wrong();
         ansEl.textContent = val;
         ansEl.className = 'answer-box bad';
@@ -932,6 +1289,14 @@
         const elapsed = performance.now() - roundStartTime;
         userTimeSamples.push(elapsed);
         if(userTimeSamples.length > 5) userTimeSamples.shift();
+
+        // ---- reward: earn coins for a correct answer ----
+        addCoins(5);
+        save.careerCorrect++;
+        perfectStreakCount++;
+        if(elapsed <= 5000) save.gotSpeed = true;
+        if(perfectStreakCount >= 5) save.gotPerfect = true;
+        checkBadges();
         // From the 3rd game onward, playing well enough (25+ solved) earns the win
         if(mode === 'online' && userGamesPlayed >= 3 && solvedA >= 25) pityActive = true;
 
@@ -964,9 +1329,20 @@
       if(side === 'A'){
         wrongStreakA++;
         userWrongCount++;
+        perfectStreakCount = 0;
+        addCoins(-5);
         if(wrongStreakA >= 2 && mode === 'online' && !aiHandicappedThisRound && roundActive){
           aiHandicappedThisRound = true;
           helpUserNextRound = true; // next round: easier question for the user, harder for the AI
+        }
+        chancesLeftA--;
+        if(chancesLeftA <= 0){
+          setTimeout(function(){
+            ansEl.className = 'answer-box';
+            answerA = ''; ansAEl.textContent = '';
+            showChanceOverlay();
+          }, 340);
+          return;
         }
       }
       setTimeout(function(){
@@ -1025,7 +1401,14 @@
     SFX.win();
     const winnerName = winner === 'A' ? teamNameAEl.textContent : teamNameBEl.textContent;
     winTitle.textContent = winnerName + ' wins!';
-    winSub.textContent = 'Solved ' + (winner === 'A' ? solvedA : solvedB) + ' problems and pulled the ribbon across.';
+    let subText = 'Solved ' + (winner === 'A' ? solvedA : solvedB) + ' problems and pulled the ribbon across.';
+    if(winner === 'A'){
+      addCoins(50);
+      save.careerWins++;
+      checkBadges();
+      subText += ' +50 🪙 bonus!';
+    }
+    winSub.textContent = subText;
     overlay.classList.add('show');
   }
 
@@ -1033,6 +1416,7 @@
     position = 0; gameOver = false;
     solvedA = 0; solvedB = 0;
     wrongStreakA = 0; aiHandicappedThisRound = false; helpUserNextRound = false;
+    perfectStreakCount = 0; chancesLeftA = 5; pityBlocksUsed = 0;
     userTimeSamples = [];
     userCorrectCount = 0; userWrongCount = 0; totalSolved = 0;
     userRoundStreak = 0; userMissStreak = 0; hardBurstRounds = 0;
@@ -1144,6 +1528,20 @@
     modeOverlay.classList.add('show');
   });
 
+  document.getElementById('rewardsBtn').addEventListener('click', function(){
+    buildRewardsScreen();
+    rewardsOverlay.classList.add('show');
+  });
+  document.getElementById('rewardsCloseBtn').addEventListener('click', function(){
+    rewardsOverlay.classList.remove('show');
+  });
+  document.getElementById('chanceUseCoinsBtn').addEventListener('click', function(){
+    if(spendCoins(25)) resumeAfterChance();
+  });
+  document.getElementById('chanceWatchAdBtn').addEventListener('click', runSimulatedAd);
+
+  updateCoinDisplay();
+  applyRibbonColor();
   updateVisual();
 })();
 </script>
