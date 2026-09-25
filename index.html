@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Brain Exercise — Math Tug of War</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-functions-compat.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@600;700;800&display=swap" rel="stylesheet">
@@ -700,6 +704,7 @@
       <div class="win-trophy">🎁</div>
       <h2>Rewards</h2>
       <div class="rewards-coin-row">🪙 <span id="rewardsCoinCount">0</span></div>
+      <button class="chance-btn chance-btn-ad" id="rewardsWatchAdBtn" style="margin:0 auto 4px;display:block;">📺 Watch Ad (+25 coins)</button>
 
       <div class="rewards-section-title">Ribbon Colors</div>
       <div class="ribbon-grid" id="ribbonGrid"></div>
@@ -717,7 +722,7 @@
       <h2>Out of chances!</h2>
       <p class="mode-sub">You've used all 5 tries on this question. Get one more chance:</p>
       <div class="chance-btns">
-        <button class="chance-btn chance-btn-coins" id="chanceUseCoinsBtn">🪙 Use 25 Coins</button>
+        <button class="chance-btn chance-btn-coins" id="chanceUseCoinsBtn">🪙 Use 30 Coins</button>
         <button class="chance-btn chance-btn-ad" id="chanceWatchAdBtn">📺 Watch Ad (+25 coins)</button>
       </div>
     </div>
@@ -861,6 +866,26 @@
   ];
   const SAVE_KEY = 'brainExerciseSave';
 
+  // =========================================================================
+  // FIREBASE SETUP — fill this in with YOUR Firebase project's config
+  // (Firebase Console → Project Settings → General → Your apps → Web app).
+  // Game works fine on localStorage alone even if this stays unfilled or if
+  // the network/login fails — Firebase only ADDS cross-device progress sync.
+  // =========================================================================
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDYIypY0z_su1q27yi-8-820wv5rTLT_4E",
+    authDomain: "mathtugofwar-2abc3.firebaseapp.com",
+    projectId: "mathtugofwar-2abc3",
+    storageBucket: "mathtugofwar-2abc3.firebasestorage.app",
+    messagingSenderId: "1010267724263",
+    appId: "1:1010267724263:web:f73d91b2c3c31bb091c542"
+  };
+
+  let fbApp = null, fbAuth = null, fbDb = null, fbFunctions = null;
+  let firebaseUid = null;
+  let cloudSyncEnabled = false;
+  let cloudSaveTimeout = null;
+
   function loadSave(){
     let d;
     try{ d = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}'); }catch(e){ d = {}; }
@@ -877,7 +902,66 @@
   }
   let save = loadSave();
   function persistSave(){
+    // Always write locally first (instant, works offline).
     try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
+    // Then debounce a write up to Firestore, if signed in.
+    if(cloudSyncEnabled && firebaseUid){
+      clearTimeout(cloudSaveTimeout);
+      cloudSaveTimeout = setTimeout(function(){
+        fbDb.collection('users').doc(firebaseUid).set(save, { merge:true }).catch(function(err){
+          console.warn('Cloud save failed, progress still kept locally:', err);
+        });
+      }, 1200);
+    }
+  }
+
+  /**
+   * Signs the player in via their Telegram identity (no separate login
+   * screen needed) and pulls their cloud-saved progress, if any. Silently
+   * does nothing if Firebase isn't configured yet, if there's no network,
+   * or if the app isn't running inside Telegram — the game keeps working
+   * on localStorage in all of those cases.
+   */
+  async function initFirebaseAndLogin(){
+    try{
+      if(FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") return; // not configured yet
+      if(!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.initData) return;
+
+      fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+      fbAuth = firebase.auth();
+      fbDb = firebase.firestore();
+      fbFunctions = firebase.functions();
+
+      const initData = window.Telegram.WebApp.initData;
+      const telegramLogin = fbFunctions.httpsCallable('telegramLogin');
+      const result = await telegramLogin({ initData: initData });
+
+      await fbAuth.signInWithCustomToken(result.data.token);
+      firebaseUid = result.data.uid;
+      cloudSyncEnabled = true;
+
+      const doc = await fbDb.collection('users').doc(firebaseUid).get();
+      if(doc.exists){
+        const d = doc.data();
+        save = {
+          coins: d.coins || 0,
+          unlockedRibbons: d.unlockedRibbons || ['red'],
+          selectedRibbon: d.selectedRibbon || 'red',
+          careerWins: d.careerWins || 0,
+          careerCorrect: d.careerCorrect || 0,
+          gotSpeed: !!d.gotSpeed,
+          gotPerfect: !!d.gotPerfect,
+          earnedBadges: d.earnedBadges || []
+        };
+        persistSave(); // keep localStorage mirror in sync too
+        updateCoinDisplay();
+        applyRibbonColor();
+      }
+    }catch(err){
+      // Any failure here (no internet, function not deployed yet, etc.)
+      // just means we stay on localStorage-only progress for this session.
+      console.warn('Firebase login skipped:', err);
+    }
   }
 
   let chancesLeftA = 5;          // wrong-attempt chances on the CURRENT question
@@ -1030,23 +1114,33 @@
     });
   }
 
-  // ---- chance-exhausted flow: spend coins or watch a (simulated) ad for one more try ----
+  // ---- coin economy: coins now only come from wins (+25) or watching ads (+25 each) ----
+  const CHANCE_COST = 30;
+  const AD_REWARD = 25;
+
+  // ---- chance-exhausted flow: spend coins or watch ads to top up, for one more try ----
+  function refreshChanceButton(){
+    document.getElementById('chanceUseCoinsBtn').disabled = save.coins < CHANCE_COST;
+  }
   function showChanceOverlay(){
     cancelAnimationFrame(timerRAF);
     roundActive = false;
-    const btn = document.getElementById('chanceUseCoinsBtn');
-    btn.disabled = save.coins < 25;
+    refreshChanceButton();
     chanceOverlay.classList.add('show');
   }
   function resumeAfterChance(){
     chanceOverlay.classList.remove('show');
-    chancesLeftA = 5;
+    chancesLeftA = 1; // one paid try at a time - fail it and the overlay comes right back
     answerA = ''; ansAEl.textContent = ''; ansAEl.className = 'answer-box';
     roundActive = true;
     startTimer();
   }
-  function runSimulatedAd(){
-    chanceOverlay.classList.remove('show');
+  /**
+   * Plays a (simulated) rewarded ad and adds AD_REWARD coins on completion.
+   * Doesn't spend anything automatically - just tops up the balance, so it
+   * can be used both mid-game (chance overlay) and anytime (Rewards screen).
+   */
+  function watchAdForCoins(onComplete){
     adOverlay.classList.add('show');
     let secLeft = 6;
     adTitleEl.textContent = 'Ad playing...';
@@ -1058,9 +1152,8 @@
       } else {
         clearInterval(iv);
         adOverlay.classList.remove('show');
-        addCoins(25);
-        spendCoins(25);
-        resumeAfterChance();
+        addCoins(AD_REWARD);
+        if(onComplete) onComplete();
       }
     }, 1000);
   }
@@ -1290,8 +1383,7 @@
         userTimeSamples.push(elapsed);
         if(userTimeSamples.length > 5) userTimeSamples.shift();
 
-        // ---- reward: earn coins for a correct answer ----
-        addCoins(5);
+        // ---- reward: career stats + badges (coins now only come from wins/ads) ----
         save.careerCorrect++;
         perfectStreakCount++;
         if(elapsed <= 5000) save.gotSpeed = true;
@@ -1330,7 +1422,6 @@
         wrongStreakA++;
         userWrongCount++;
         perfectStreakCount = 0;
-        addCoins(-5);
         if(wrongStreakA >= 2 && mode === 'online' && !aiHandicappedThisRound && roundActive){
           aiHandicappedThisRound = true;
           helpUserNextRound = true; // next round: easier question for the user, harder for the AI
@@ -1403,10 +1494,10 @@
     winTitle.textContent = winnerName + ' wins!';
     let subText = 'Solved ' + (winner === 'A' ? solvedA : solvedB) + ' problems and pulled the ribbon across.';
     if(winner === 'A'){
-      addCoins(50);
+      addCoins(25);
       save.careerWins++;
       checkBadges();
-      subText += ' +50 🪙 bonus!';
+      subText += ' +25 🪙 bonus!';
     }
     winSub.textContent = subText;
     overlay.classList.add('show');
@@ -1535,14 +1626,20 @@
   document.getElementById('rewardsCloseBtn').addEventListener('click', function(){
     rewardsOverlay.classList.remove('show');
   });
-  document.getElementById('chanceUseCoinsBtn').addEventListener('click', function(){
-    if(spendCoins(25)) resumeAfterChance();
+  document.getElementById('rewardsWatchAdBtn').addEventListener('click', function(){
+    watchAdForCoins(function(){ buildRewardsScreen(); });
   });
-  document.getElementById('chanceWatchAdBtn').addEventListener('click', runSimulatedAd);
+  document.getElementById('chanceUseCoinsBtn').addEventListener('click', function(){
+    if(spendCoins(CHANCE_COST)) resumeAfterChance();
+  });
+  document.getElementById('chanceWatchAdBtn').addEventListener('click', function(){
+    watchAdForCoins(refreshChanceButton);
+  });
 
   updateCoinDisplay();
   applyRibbonColor();
   updateVisual();
+  initFirebaseAndLogin();
 })();
 </script>
 
