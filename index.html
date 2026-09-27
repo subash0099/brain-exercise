@@ -9,7 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-functions-compat.js"></script>
-<script src='//libtl.com/sdk.js' data-zone='11885548' data-sdk='show_11885548'></script>
+<script async src='//libtl.com/sdk.js' data-zone='11885548' data-sdk='show_11885548'></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@600;700;800&display=swap" rel="stylesheet">
@@ -455,19 +455,54 @@
     box-shadow:0 5px 0 var(--gold-dark);
   }
   .play-again:active{ transform:translateY(4px); box-shadow:none; }
-  .share-btn{
-    display:block;
-    margin:12px auto 0;
+  .post-game-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:4px;
+  }
+  .play-again-icon{
+    font-size:22px;
+    line-height:1;
+    padding:11px 14px;
+    border-radius:99px;
+    border:4px solid var(--gold-dark);
+    background:var(--gold);
+    color:var(--navy);
+    cursor:pointer;
+    box-shadow:0 5px 0 var(--gold-dark);
+    flex:0 0 auto;
+  }
+  .play-again-icon:active{ transform:translateY(4px); box-shadow:none; }
+  .continue-match-btn{
     font-family:'Fredoka',cursive;
     font-weight:800;
-    font-size:15px;
-    padding:9px 22px;
+    font-size:16px;
+    padding:11px 20px;
     border-radius:99px;
-    border:3px solid var(--navy);
+    border:4px solid var(--blue);
     background:linear-gradient(180deg,var(--blue-soft),var(--blue));
     color:#fff;
     cursor:pointer;
+    box-shadow:0 5px 0 var(--navy);
+    flex:1 1 auto;
+  }
+  .continue-match-btn:active{ transform:translateY(4px); box-shadow:none; }
+  .share-btn{
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:14px;
+    padding:11px 16px;
+    border-radius:99px;
+    border:3px solid var(--navy);
+    background:linear-gradient(180deg,#6FB23F,var(--grass-dark));
+    color:#fff;
+    cursor:pointer;
     box-shadow:0 4px 0 var(--navy);
+    flex:1 1 auto;
+    white-space:nowrap;
   }
   .share-btn:active{ transform:translateY(3px); box-shadow:none; }
 
@@ -665,8 +700,12 @@
       <div class="win-trophy">🏆</div>
       <h2 id="winTitle">Team A wins!</h2>
       <p id="winSub">Pulled the ribbon all the way over.</p>
-      <button class="play-again" id="playAgainBtn">Play again</button>
-      <button class="share-btn" id="shareBtn">Share &amp; Challenge a Friend</button>
+
+      <div class="post-game-row">
+        <button class="play-again-icon" id="playAgainBtn" title="Play again">🔁</button>
+        <button class="continue-match-btn" id="continueMatchBtn" style="display:none;">Continue Match</button>
+        <button class="share-btn" id="shareBtn">Share &amp; Challenge a Friend</button>
+      </div>
     </div>
   </div>
 
@@ -1252,7 +1291,6 @@
     roundActive = true;
     answerA = ''; answerB = '';
     wrongStreakA = 0;
-    chancesLeftA = 5;
     aiHandicappedThisRound = false;
     roundStartTime = performance.now();
 
@@ -1393,6 +1431,7 @@
         solvedA++;
         position = Math.max(-LIMIT, position - 1);
         wrongStreakA = 0;
+        chancesLeftA = 5;
         userCorrectCount++;
         const elapsed = performance.now() - roundStartTime;
         userTimeSamples.push(elapsed);
@@ -1515,7 +1554,34 @@
       subText += ' +25 🪙 bonus!';
     }
     winSub.textContent = subText;
+    const continueBtn = document.getElementById('continueMatchBtn');
+    if(winner === 'B'){
+      continueBtn.style.display = 'inline-block';
+      refreshContinueButton();
+    } else {
+      continueBtn.style.display = 'none';
+    }
     overlay.classList.add('show');
+  }
+
+  const CONTINUE_COST = 25;
+  function refreshContinueButton(){
+    const btn = document.getElementById('continueMatchBtn');
+    if(save.coins >= CONTINUE_COST){
+      btn.textContent = '🪙 Use 25 Coins & Continue';
+    } else {
+      btn.textContent = '📺 Watch Ad & Continue';
+    }
+  }
+  function continueMatch(){
+    document.getElementById('continueMatchBtn').style.display = 'none';
+    overlay.classList.remove('show');
+    gameOver = false;
+    position = 0;
+    chancesLeftA = 5;
+    pityBlocksUsed = 0;
+    updateVisual();
+    newRound();
   }
 
   function resetGame(){
@@ -1560,6 +1626,20 @@
     modeOverlay.classList.remove('show');
     nameOverlay.classList.remove('show');
     resetGame();
+
+    // ---- TESTING: In-app Interstitial format (automatic ads during a match) ----
+    // Shows up to 2 ads within 6 minutes, 30s apart, starting 5s after the match
+    // begins. This is here purely so you can compare it against the Rewarded
+    // Interstitial (Watch Ad button) and Rewarded Popup - remove this block if
+    // you decide automatic ads aren't the right fit.
+    try{
+      if(typeof show_11885548 === 'function'){
+        show_11885548({
+          type: 'inApp',
+          inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
+        });
+      }
+    }catch(e){ console.warn('In-app interstitial not available:', e); }
   }
 
   buildPad(document.getElementById('padA'), 'A');
@@ -1649,6 +1729,15 @@
   });
   document.getElementById('chanceWatchAdBtn').addEventListener('click', function(){
     watchAdForCoins(refreshChanceButton);
+  });
+  document.getElementById('continueMatchBtn').addEventListener('click', function(){
+    if(save.coins >= CONTINUE_COST){
+      if(spendCoins(CONTINUE_COST)) continueMatch();
+    } else {
+      watchAdForCoins(function(){
+        if(spendCoins(CONTINUE_COST)) continueMatch();
+      });
+    }
   });
 
   updateCoinDisplay();
