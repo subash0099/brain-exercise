@@ -677,4 +677,986 @@
       <p>Choose your mode</p>
       <div class="mode-btns">
         <button class="mode-btn mode-btn-a" id="btnFriend">Play with Friend</button>
-        <button cl
+        <button class="mode-btn mode-btn-b" id="btnOnline">Play Online</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="nameOverlay">
+    <div class="win-card mode-card">
+      <div class="win-trophy">🧑</div>
+      <h2>What's your name?</h2>
+      <p class="mode-sub">This name will appear instead of Team A</p>
+      <input type="text" id="nameInput" class="name-input" placeholder="Enter your name" maxlength="14">
+      <button class="play-again" id="btnStartOnline">Start</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="searchOverlay">
+    <div class="win-card mode-card">
+      <div class="search-spinner"></div>
+      <h2 id="searchTitle">Finding an opponent...</h2>
+      <p class="mode-sub" id="searchSub">Hang tight, matching you with a player</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="rewardsOverlay">
+    <div class="win-card rewards-card">
+      <div class="win-trophy">🎁</div>
+      <h2>Rewards</h2>
+      <div class="rewards-coin-row">🪙 <span id="rewardsCoinCount">0</span></div>
+      <button class="chance-btn chance-btn-ad" id="rewardsWatchAdBtn" style="margin:0 auto 4px;display:block;">📺 Watch Ad (+25 coins)</button>
+
+      <div class="rewards-section-title">Ribbon Colors</div>
+      <div class="ribbon-grid" id="ribbonGrid"></div>
+
+      <div class="rewards-section-title">Badges</div>
+      <div class="badge-grid" id="badgeGrid"></div>
+
+      <button class="rewards-close" id="rewardsCloseBtn">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="chanceOverlay">
+    <div class="win-card mode-card">
+      <div class="win-trophy">😅</div>
+      <h2>Out of chances!</h2>
+      <p class="mode-sub">You've used all 5 tries on this question. Get one more chance:</p>
+      <div class="chance-btns">
+        <button class="chance-btn chance-btn-coins" id="chanceUseCoinsBtn">🪙 Use 30 Coins</button>
+        <button class="chance-btn chance-btn-ad" id="chanceWatchAdBtn">📺 Watch Ad (+25 coins)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="adOverlay">
+    <div class="win-card mode-card">
+      <div class="ad-ring"></div>
+      <h2 id="adTitle">Ad playing...</h2>
+      <p class="mode-sub" id="adSub">Please wait 6s</p>
+    </div>
+  </div>
+
+  <div class="coin-toast" id="coinToast"></div>
+  <div class="badge-toast" id="badgeToast"></div>
+
+</div>
+</div>
+
+<script>
+(function(){
+  // ---- play counter ----
+  (function trackPlay(){
+    try{
+      const key = location.origin + location.pathname;
+      fetch('https://hits-app.vercel.app/hits?url=' + encodeURIComponent(key) + '&json').catch(()=>{});
+    }catch(e){}
+  })();
+
+  // ---- Telegram Mini App setup ----
+  if(window.Telegram && window.Telegram.WebApp){
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    try{ tg.disableVerticalSwipes(); }catch(e){}
+    try{ tg.setHeaderColor('#0C2748'); }catch(e){}
+    try{ tg.setBackgroundColor('#0C2748'); }catch(e){}
+    try{ tg.requestFullscreen(); }catch(e){}
+  }
+
+  // ---- FIT THE FIXED CANVAS TO ANY SCREEN ----
+  // The design size never changes, so nothing can overlap and nothing
+  // balloons on a big screen. Only the zoom level changes per device.
+  const DESIGN_W = 900, DESIGN_H = 560;
+  const MAX_SCALE = 1.3;   // keeps the keypad from getting huge on laptops
+  const stage = document.getElementById('stage');
+
+  function fitStage(){
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // A tall screen (phone held upright) gets the canvas turned sideways,
+    // so the player just rotates the phone and everything already fits.
+    const rotate = vh > vw;
+    const availW = rotate ? vh : vw;
+    const availH = rotate ? vw : vh;
+    let scale = Math.min(availW / DESIGN_W, availH / DESIGN_H) * 0.98;
+    scale = Math.min(scale, MAX_SCALE);
+    stage.style.transform = (rotate ? 'rotate(90deg) ' : '') + 'scale(' + scale + ')';
+  }
+  fitStage();
+  window.addEventListener('resize', fitStage);
+  window.addEventListener('orientationchange', function(){ setTimeout(fitStage, 200); });
+
+  // ---- sound effects (synth, no audio files needed) ----
+  const SFX = (function(){
+    let ctx;
+    let enabled = true;
+    function ac(){
+      if(!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if(ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    function tone(freq, dur, opts){
+      if(!enabled) return;
+      opts = opts || {};
+      try{
+        const c = ac();
+        const t0 = c.currentTime + (opts.delay || 0);
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = opts.type || 'sine';
+        osc.frequency.setValueAtTime(freq, t0);
+        if(opts.slideTo) osc.frequency.exponentialRampToValueAtTime(opts.slideTo, t0 + dur);
+        const vol = opts.vol != null ? opts.vol : 0.18;
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(gain).connect(c.destination);
+        osc.start(t0);
+        osc.stop(t0 + dur + 0.02);
+      }catch(e){}
+    }
+    return {
+      unlock: function(){ try{ ac(); }catch(e){} },
+      isEnabled: function(){ return enabled; },
+      setEnabled: function(v){ enabled = v; },
+      key: function(){ tone(520, 0.06, {type:'square', vol:0.08}); },
+      correct: function(){
+        tone(660, 0.09, {type:'triangle', vol:0.16});
+        tone(880, 0.12, {type:'triangle', vol:0.16, delay:0.09});
+      },
+      wrong: function(){ tone(160, 0.18, {type:'sawtooth', vol:0.12, slideTo:90}); },
+      tick: function(){ tone(1000, 0.05, {type:'square', vol:0.06}); },
+      win: function(){
+        [523,659,784,1047].forEach(function(f,i){
+          tone(f, 0.22, {type:'triangle', vol:0.18, delay:i*0.13});
+        });
+      }
+    };
+  })();
+  // unlock audio on first touch/click (required by mobile browsers)
+  ['touchstart','click'].forEach(function(ev){
+    window.addEventListener(ev, function once(){ SFX.unlock(); window.removeEventListener(ev, once); }, {once:true});
+  });
+
+  // ---- game state ----
+  const LIMIT = 5;
+  const ROUND_TIME = 10000;
+  const INDIAN_NAMES = ['Rahul','Amit','Rohan','Vikram','Suresh','Ankit','Arjun','Karan','Manoj','Deepak',
+    'Sanjay','Nikhil','Priya','Neha','Pooja','Kavita','Sneha','Anjali','Ritu','Simran'];
+
+  let mode = null;          // 'friend' or 'online'
+  let playerName = 'You';
+  let opponentName = 'Rahul';
+  let aiTimeout = null;
+
+  // ---- reward system: coins, ribbon unlocks, badges (persisted in localStorage) ----
+  const RIBBONS = [
+    { id:'red',     name:'Classic Red', cost:0,   color:'var(--red)' },
+    { id:'gold',    name:'Gold',        cost:100, color:'linear-gradient(160deg,#FFE9A0,#F5C542)' },
+    { id:'purple',  name:'Purple',      cost:250, color:'linear-gradient(160deg,#B98CF0,#7B3FD1)' },
+    { id:'rainbow', name:'Rainbow',     cost:500, color:'linear-gradient(160deg,#FF6B6B,#FFD166,#4FCB2F,#3E84E6,#B98CF0)' }
+  ];
+  const BADGES = [
+    { id:'firstWin',   name:'First Win',        icon:'🏅', check:function(s){ return s.careerWins >= 1; } },
+    { id:'tenWins',    name:'10 Wins',          icon:'🏆', check:function(s){ return s.careerWins >= 10; } },
+    { id:'fifty',      name:'50 Correct',       icon:'🧠', check:function(s){ return s.careerCorrect >= 50; } },
+    { id:'hundred',    name:'100 Correct',      icon:'💯', check:function(s){ return s.careerCorrect >= 100; } },
+    { id:'speed',      name:'Speed Solver',     icon:'⚡', check:function(s){ return !!s.gotSpeed; } },
+    { id:'perfect',    name:'Perfect Streak',   icon:'🔥', check:function(s){ return !!s.gotPerfect; } }
+  ];
+  const SAVE_KEY = 'brainExerciseSave';
+
+  // =========================================================================
+  // FIREBASE SETUP — fill this in with YOUR Firebase project's config
+  // (Firebase Console → Project Settings → General → Your apps → Web app).
+  // Game works fine on localStorage alone even if this stays unfilled or if
+  // the network/login fails — Firebase only ADDS cross-device progress sync.
+  // =========================================================================
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDYIypY0z_su1q27yi-8-820wv5rTLT_4E",
+    authDomain: "mathtugofwar-2abc3.firebaseapp.com",
+    projectId: "mathtugofwar-2abc3",
+    storageBucket: "mathtugofwar-2abc3.firebasestorage.app",
+    messagingSenderId: "1010267724263",
+    appId: "1:1010267724263:web:f73d91b2c3c31bb091c542"
+  };
+
+  let fbApp = null, fbAuth = null, fbDb = null, fbFunctions = null;
+  let firebaseUid = null;
+  let cloudSyncEnabled = false;
+  let cloudSaveTimeout = null;
+
+  function loadSave(){
+    let d;
+    try{ d = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}'); }catch(e){ d = {}; }
+    return {
+      coins: d.coins || 0,
+      unlockedRibbons: d.unlockedRibbons || ['red'],
+      selectedRibbon: d.selectedRibbon || 'red',
+      careerWins: d.careerWins || 0,
+      careerCorrect: d.careerCorrect || 0,
+      gotSpeed: !!d.gotSpeed,
+      gotPerfect: !!d.gotPerfect,
+      earnedBadges: d.earnedBadges || []
+    };
+  }
+  let save = loadSave();
+  function persistSave(){
+    // Always write locally first (instant, works offline).
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
+    // Then debounce a write up to Firestore, if signed in.
+    if(cloudSyncEnabled && firebaseUid){
+      clearTimeout(cloudSaveTimeout);
+      cloudSaveTimeout = setTimeout(function(){
+        fbDb.collection('users').doc(firebaseUid).set(save, { merge:true }).catch(function(err){
+          console.warn('Cloud save failed, progress still kept locally:', err);
+        });
+      }, 1200);
+    }
+  }
+
+  /**
+   * Signs the player in via their Telegram identity (no separate login
+   * screen needed) and pulls their cloud-saved progress, if any. Silently
+   * does nothing if Firebase isn't configured yet, if there's no network,
+   * or if the app isn't running inside Telegram — the game keeps working
+   * on localStorage in all of those cases.
+   */
+  async function initFirebaseAndLogin(){
+    try{
+      if(FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") return; // not configured yet
+      if(!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.initData) return;
+
+      fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+      fbAuth = firebase.auth();
+      fbDb = firebase.firestore();
+      fbFunctions = firebase.functions();
+
+      const initData = window.Telegram.WebApp.initData;
+      const telegramLogin = fbFunctions.httpsCallable('telegramLogin');
+      const result = await telegramLogin({ initData: initData });
+
+      await fbAuth.signInWithCustomToken(result.data.token);
+      firebaseUid = result.data.uid;
+      cloudSyncEnabled = true;
+
+      const doc = await fbDb.collection('users').doc(firebaseUid).get();
+      if(doc.exists){
+        const d = doc.data();
+        save = {
+          coins: d.coins || 0,
+          unlockedRibbons: d.unlockedRibbons || ['red'],
+          selectedRibbon: d.selectedRibbon || 'red',
+          careerWins: d.careerWins || 0,
+          careerCorrect: d.careerCorrect || 0,
+          gotSpeed: !!d.gotSpeed,
+          gotPerfect: !!d.gotPerfect,
+          earnedBadges: d.earnedBadges || []
+        };
+        persistSave(); // keep localStorage mirror in sync too
+        updateCoinDisplay();
+        applyRibbonColor();
+      }
+    }catch(err){
+      // Any failure here (no internet, function not deployed yet, etc.)
+      // just means we stay on localStorage-only progress for this session.
+      console.warn('Firebase login skipped:', err);
+    }
+  }
+
+  let chancesLeftA = 5;          // wrong-attempt chances on the CURRENT question
+  let perfectStreakCount = 0;    // consecutive correct answers this match, no misses
+
+  // adaptive difficulty state (Play Online): AI speed reacts to how the user is doing
+  let wrongStreakA = 0;          // consecutive wrong tries by the user in THIS round
+  let aiHandicappedThisRound = false;
+  let helpUserNextRound = false; // if true, next round: easier for user, harder for AI
+  let userTimeSamples = [];      // recent correct-answer times for the user (ms)
+  let roundStartTime = 0;
+  let userGamesPlayed = 0;       // games started in Play Online, this session
+  let pityActive = false;        // when true, the AI can't quite land the finishing pull
+  let pityBlocksUsed = 0;        // how many times pity has already blocked a finishing answer this match
+  let userCorrectCount = 0;      // this match: user's correct answers
+  let userWrongCount = 0;        // this match: user's wrong tries
+  let totalSolved = 0;           // this match: questions solved by BOTH sides combined — drives progression
+  let userRoundStreak = 0;       // consecutive ROUNDS the user has solved first
+  let userMissStreak = 0;        // consecutive ROUNDS the user has failed to solve
+  let hardBurstRounds = 0;       // remaining rounds where the user's own question is deliberately hard
+
+  let position = 0;
+  let roundActive = true;
+  let gameOver = true;
+  let qA, qB;
+  let answerA = '', answerB = '';
+  let solvedA = 0, solvedB = 0;
+  let timerStart, timerRAF;
+
+  const ribbon    = document.getElementById('ribbon');
+  const qAEl      = document.getElementById('qA');
+  const qBEl      = document.getElementById('qB');
+  const ansAEl    = document.getElementById('ansA');
+  const ansBEl    = document.getElementById('ansB');
+  const padBoxA   = document.getElementById('padBoxA');
+  const padBoxB   = document.getElementById('padBoxB');
+  const pullA     = document.getElementById('pullA');
+  const pullB     = document.getElementById('pullB');
+  const solvedAEl = document.getElementById('solvedA');
+  const solvedBEl = document.getElementById('solvedB');
+  const timerFill = document.getElementById('timerFill');
+  const timeText  = document.getElementById('timeText');
+  const overlay   = document.getElementById('overlay');
+  const winTitle  = document.getElementById('winTitle');
+  const winSub    = document.getElementById('winSub');
+  const modeOverlay = document.getElementById('modeOverlay');
+  const nameOverlay = document.getElementById('nameOverlay');
+  const nameInput   = document.getElementById('nameInput');
+  const searchOverlay = document.getElementById('searchOverlay');
+  const searchTitleEl = document.getElementById('searchTitle');
+  const searchSubEl   = document.getElementById('searchSub');
+  const teamNameAEl = document.getElementById('teamNameA');
+  const teamNameBEl = document.getElementById('teamNameB');
+  const padTitleAEl = document.getElementById('padTitleA');
+  const padTitleBEl = document.getElementById('padTitleB');
+  const aiThinkEl   = document.getElementById('aiThink');
+  const coinCountEl = document.getElementById('coinCount');
+  const coinToastEl = document.getElementById('coinToast');
+  const badgeToastEl = document.getElementById('badgeToast');
+  const rewardsOverlay = document.getElementById('rewardsOverlay');
+  const rewardsCoinCountEl = document.getElementById('rewardsCoinCount');
+  const ribbonGridEl = document.getElementById('ribbonGrid');
+  const badgeGridEl = document.getElementById('badgeGrid');
+  const chanceOverlay = document.getElementById('chanceOverlay');
+  const adOverlay = document.getElementById('adOverlay');
+  const adTitleEl = document.getElementById('adTitle');
+  const adSubEl = document.getElementById('adSub');
+
+  // ---- coin + reward helpers ----
+  function updateCoinDisplay(){
+    coinCountEl.textContent = save.coins;
+    rewardsCoinCountEl.textContent = save.coins;
+  }
+  function showCoinToast(text, good){
+    coinToastEl.textContent = text;
+    coinToastEl.style.color = good ? 'var(--gold)' : 'var(--red)';
+    coinToastEl.classList.remove('fly'); void coinToastEl.offsetWidth;
+    coinToastEl.classList.add('fly');
+  }
+  function addCoins(n){
+    save.coins = Math.max(0, save.coins + n);
+    updateCoinDisplay();
+    persistSave();
+    if(n !== 0) showCoinToast((n > 0 ? '+' : '') + n + ' 🪙', n > 0);
+  }
+  function spendCoins(n){
+    if(save.coins < n) return false;
+    save.coins -= n;
+    updateCoinDisplay();
+    persistSave();
+    return true;
+  }
+  function applyRibbonColor(){
+    const r = RIBBONS.find(function(x){ return x.id === save.selectedRibbon; }) || RIBBONS[0];
+    ribbon.style.background = r.color;
+  }
+  function showBadgeToast(name){
+    badgeToastEl.textContent = '🏅 New Badge: ' + name + '!';
+    badgeToastEl.classList.add('show');
+    setTimeout(function(){ badgeToastEl.classList.remove('show'); }, 2400);
+  }
+  function checkBadges(){
+    BADGES.forEach(function(b){
+      if(save.earnedBadges.indexOf(b.id) === -1 && b.check(save)){
+        save.earnedBadges.push(b.id);
+        showBadgeToast(b.name);
+      }
+    });
+    persistSave();
+  }
+  function buildRewardsScreen(){
+    ribbonGridEl.innerHTML = '';
+    RIBBONS.forEach(function(r){
+      const owned = save.unlockedRibbons.indexOf(r.id) !== -1;
+      const selected = save.selectedRibbon === r.id;
+      const item = document.createElement('div');
+      item.className = 'ribbon-item' + (owned ? '' : ' locked') + (selected ? ' selected' : '');
+      item.innerHTML =
+        '<div class="ribbon-swatch" style="background:' + r.color + '"></div>' +
+        '<div class="ribbon-name">' + r.name + '</div>' +
+        (selected ? '<div class="ribbon-tag">Selected</div>' :
+          owned ? '<div class="ribbon-tag">Tap to select</div>' :
+          '<div class="ribbon-cost">🪙 ' + r.cost + '</div>');
+      item.addEventListener('click', function(){
+        if(save.unlockedRibbons.indexOf(r.id) !== -1){
+          save.selectedRibbon = r.id;
+          persistSave();
+          applyRibbonColor();
+          buildRewardsScreen();
+        } else if(spendCoins(r.cost)){
+          save.unlockedRibbons.push(r.id);
+          save.selectedRibbon = r.id;
+          persistSave();
+          applyRibbonColor();
+          buildRewardsScreen();
+        } else {
+          showCoinToast('Not enough coins', false);
+        }
+      });
+      ribbonGridEl.appendChild(item);
+    });
+
+    badgeGridEl.innerHTML = '';
+    BADGES.forEach(function(b){
+      const earned = save.earnedBadges.indexOf(b.id) !== -1;
+      const item = document.createElement('div');
+      item.className = 'badge-item' + (earned ? '' : ' locked');
+      item.innerHTML = '<div class="badge-icon">' + b.icon + '</div><div class="badge-name">' + b.name + '</div>';
+      badgeGridEl.appendChild(item);
+    });
+  }
+
+  // ---- coin economy: coins now only come from wins (+25) or watching ads (+25 each) ----
+  const CHANCE_COST = 30;
+  const AD_REWARD = 25;
+
+  // ---- chance-exhausted flow: spend coins or watch ads to top up, for one more try ----
+  function refreshChanceButton(){
+    document.getElementById('chanceUseCoinsBtn').disabled = save.coins < CHANCE_COST;
+  }
+  function showChanceOverlay(){
+    cancelAnimationFrame(timerRAF);
+    roundActive = false;
+    refreshChanceButton();
+    chanceOverlay.classList.add('show');
+  }
+  function resumeAfterChance(){
+    chanceOverlay.classList.remove('show');
+    chancesLeftA = 1; // one paid try at a time - fail it and the overlay comes right back
+    answerA = ''; ansAEl.textContent = ''; ansAEl.className = 'answer-box';
+    roundActive = true;
+    startTimer();
+  }
+  /**
+   * Plays a (simulated) rewarded ad and adds AD_REWARD coins on completion.
+   * Doesn't spend anything automatically - just tops up the balance, so it
+   * can be used both mid-game (chance overlay) and anytime (Rewards screen).
+   */
+  function watchAdForCoins(onComplete){
+    // Real Monetag rewarded ad (zone 11885548). Monetag's SDK shows its own
+    // full-screen ad UI and resolves the promise once it's been watched.
+    if(typeof show_11885548 === 'function'){
+      show_11885548().then(function(){
+        addCoins(AD_REWARD);
+        if(onComplete) onComplete();
+      }).catch(function(err){
+        console.warn('Ad not available:', err);
+        showCoinToast('No ad available, try again', false);
+      });
+      return;
+    }
+    // Fallback simulated ad - only used if the Monetag script failed to load
+    // (ad blocker, offline, or testing outside Telegram).
+    adOverlay.classList.add('show');
+    let secLeft = 6;
+    adTitleEl.textContent = 'Ad playing...';
+    adSubEl.textContent = 'Please wait ' + secLeft + 's';
+    const iv = setInterval(function(){
+      secLeft--;
+      if(secLeft > 0){
+        adSubEl.textContent = 'Please wait ' + secLeft + 's';
+      } else {
+        clearInterval(iv);
+        adOverlay.classList.remove('show');
+        addCoins(AD_REWARD);
+        if(onComplete) onComplete();
+      }
+    }, 1000);
+  }
+
+  function showThinking(v){
+    aiThinkEl.classList.toggle('show', !!v);
+  }
+
+  function updateVisual(){
+    ribbon.style.left = (50 + position * 7.2) + '%';
+    pullA.style.width = (Math.max(0, -position) / LIMIT * 100) + '%';
+    pullB.style.width = (Math.max(0,  position) / LIMIT * 100) + '%';
+    solvedAEl.textContent = solvedA;
+    solvedBEl.textContent = solvedB;
+  }
+
+  function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+  function makeQuestion(level, tier){
+    level = level || 'normal';
+    tier = tier || 0;   // 0 = normal, 1 = harder (20+ solved), 2 = advanced ops unlocked (30+ solved)
+    const boost = tier >= 2 ? 1.8 : (tier >= 1 ? 1.35 : 1);
+
+    // Once the match has gone on a while, mix in square / cube / square-root questions
+    if(tier >= 2 && level !== 'easy' && Math.random() < 0.35) return makeAdvancedQuestion(level);
+
+    let op;
+    if(level === 'easy') op = Math.random() < 0.7 ? '+' : '-';
+    else if(level === 'hard') op = Math.random() < 0.6 ? (Math.random() < 0.5 ? '×' : '÷') : (Math.random() < 0.5 ? '+' : '-');
+    else op = ['+','-','×','÷'][randInt(0,3)];
+
+    let a,b,answer,text;
+    if(op === '+'){
+      if(level === 'easy'){ a = randInt(2, Math.round(12*boost)); b = randInt(2, Math.round(12*boost)); }
+      else if(level === 'hard'){ a = randInt(15, Math.round(60*boost)); b = randInt(15, Math.round(60*boost)); }
+      else { a = randInt(2, Math.round(30*boost)); b = randInt(2, Math.round(30*boost)); }
+      answer = a+b; text = a+' + '+b;
+    } else if(op === '-'){
+      if(level === 'easy'){ a = randInt(5, Math.round(15*boost)); b = randInt(1,a); }
+      else if(level === 'hard'){ a = randInt(30, Math.round(70*boost)); b = randInt(1,a); }
+      else { a = randInt(5, Math.round(40*boost)); b = randInt(1,a); }
+      answer = a-b; text = a+' − '+b;
+    } else if(op === '×'){
+      if(level === 'easy'){ a = randInt(2, Math.round(6*boost)); b = randInt(2, Math.round(5*boost)); }
+      else if(level === 'hard'){ a = randInt(6, Math.round(15*boost)); b = randInt(6, Math.round(12*boost)); }
+      else { a = randInt(2, Math.round(12*boost)); b = randInt(2, Math.round(10*boost)); }
+      answer = a*b; text = a+' × '+b;
+    } else {
+      if(level === 'easy'){ b = randInt(2, Math.round(5*boost)); answer = randInt(2, Math.round(6*boost)); a = b*answer; }
+      else if(level === 'hard'){ b = randInt(6, Math.round(12*boost)); answer = randInt(6, Math.round(14*boost)); a = b*answer; }
+      else { b = randInt(2, Math.round(10*boost)); answer = randInt(2, Math.round(12*boost)); a = b*answer; }
+      text = a+' ÷ '+b;
+    }
+    return {text:text, answer:String(answer), op:op, a:a, b:b};
+  }
+
+  function makeAdvancedQuestion(level){
+    const type = ['square','cube','sqrt'][randInt(0,2)];
+    const big = level === 'hard';
+    let a, answer, text, op;
+    if(type === 'square'){
+      a = big ? randInt(11,20) : randInt(2,15); answer = a*a; text = a+'²'; op = 'sq';
+    } else if(type === 'cube'){
+      a = big ? randInt(6,10) : randInt(2,8); answer = a*a*a; text = a+'³'; op = 'cube';
+    } else {
+      a = big ? randInt(11,18) : randInt(2,15); answer = a; text = '√'+(a*a); op = 'sqrt';
+    }
+    return {text:text, answer:String(answer), op:op, a:a, b:0};
+  }
+
+  // Progression: as the match goes on, questions gradually get harder for BOTH
+  // players, in both Play with Friend and Play Online — then advanced ops unlock.
+  function currentTier(){
+    if(totalSolved >= 30) return 2;   // square / cube / square-root start appearing
+    if(totalSolved >= 20) return 1;   // bigger numbers on the standard ops
+    return 0;
+  }
+
+  function newRound(){
+    if(gameOver) return;
+    roundActive = true;
+    answerA = ''; answerB = '';
+    wrongStreakA = 0;
+    chancesLeftA = 5;
+    aiHandicappedThisRound = false;
+    roundStartTime = performance.now();
+
+    let levelA = 'normal', levelB = 'normal';
+    if(mode === 'online' && helpUserNextRound){
+      levelA = 'easy';   // user was struggling last round — give them a breather
+      levelB = 'hard';   // AI genuinely gets a harder sum, which naturally slows it down
+      helpUserNextRound = false;
+    } else if(mode === 'online' && hardBurstRounds > 0){
+      levelA = 'hard';   // early hot streak — challenge the user for a couple of rounds
+      hardBurstRounds--;
+    }
+    const tier = currentTier();
+    qA = makeQuestion(levelA, tier);
+    qB = makeQuestion(levelB, tier);
+    qAEl.textContent = qA.text + ' = ?';
+    qBEl.textContent = qB.text + ' = ?';
+    ansAEl.textContent = ''; ansAEl.className = 'answer-box';
+    ansBEl.textContent = ''; ansBEl.className = 'answer-box';
+    const dotA = document.getElementById('dotA');
+    const dotB = document.getElementById('dotB');
+    if(dotA) dotA.textContent = (qA.op === 'sqrt') ? '√' : '.';
+    if(dotB) dotB.textContent = (qB.op === 'sqrt') ? '√' : '.';
+    startTimer();
+    if(mode === 'online') scheduleAI(levelB === 'hard');
+    else showThinking(false);
+  }
+
+  // ---- AI opponent (Play Online mode) : speed adapts to how the user is actually playing ----
+  // Genuinely randomized — no fixed "addition = X seconds" rule, so it doesn't
+  // feel mechanical. Slightly weighted by how big the numbers are and by how
+  // the user is doing, but the spread is wide enough that no two questions
+  // (even the same type) play out the same way.
+  function aiThinkTime(q, assist){
+    const totalTries = userCorrectCount + userWrongCount;
+    const missRate = totalTries ? (userWrongCount / totalTries) : 0;
+
+    const digits = String(q.a).length + (q.b ? String(q.b).length : 0);
+    let baseTime = randInt(1800, 6200) + digits * randInt(250, 550);
+    baseTime += missRate * randInt(700, 2600);           // user struggling → AI eases off, unpredictably
+    if(assist) baseTime += 1800 + randInt(300, 2200);     // mid-round comeback assist
+    const extraSlip = missRate * 0.35;
+
+    return { time: Math.max(1200, Math.min(baseTime, 12000)), extraSlip: extraSlip };
+  }
+
+  function scheduleAI(assist){
+    clearTimeout(aiTimeout);
+    if(mode !== 'online') return;
+    showThinking(true);
+    const think = aiThinkTime(qB, assist);
+    const baseTime = think.time;
+    const makesSlip = Math.random() < Math.min(0.85, (assist ? 0.55 : 0.22) + think.extraSlip);
+
+    if(makesSlip){
+      const slipDelay = Math.max(600, baseTime - 900);
+      aiTimeout = setTimeout(function(){
+        if(!roundActive || gameOver || mode !== 'online') return;
+        const correctNum = parseInt(qB.answer, 10);
+        const delta = randInt(1,3) * (Math.random() < 0.5 ? -1 : 1);
+        const wrongVal = String(Math.max(0, correctNum + delta));
+        answerB = wrongVal;
+        ansBEl.textContent = wrongVal;
+        submitAnswer('B');
+        aiTimeout = setTimeout(function(){
+          if(!roundActive || gameOver || mode !== 'online') return;
+          answerB = qB.answer;
+          ansBEl.textContent = answerB;
+          showThinking(false);
+          submitAnswer('B');
+        }, 500 + randInt(200,600));
+      }, slipDelay);
+    } else {
+      aiTimeout = setTimeout(function(){
+        if(!roundActive || gameOver || mode !== 'online') return;
+        answerB = qB.answer;
+        ansBEl.textContent = answerB;
+        showThinking(false);
+        submitAnswer('B');
+      }, baseTime);
+    }
+  }
+
+  let lastTickSec = -1;
+  function startTimer(){
+    cancelAnimationFrame(timerRAF);
+    timerStart = performance.now();
+    lastTickSec = -1;
+    function tick(now){
+      if(!roundActive) return;
+      const left = Math.max(0, ROUND_TIME - (now - timerStart));
+      timerFill.style.width = (left / ROUND_TIME * 100) + '%';
+      const secLeft = Math.ceil(left/1000);
+      timeText.textContent = '00:' + String(secLeft).padStart(2,'0');
+      if(secLeft <= 3 && secLeft !== lastTickSec){ lastTickSec = secLeft; SFX.tick(); }
+      if(left <= 0){
+        if(mode === 'online'){ userRoundStreak = 0; userMissStreak++; }
+        newRound();
+        return;
+      }
+      timerRAF = requestAnimationFrame(tick);
+    }
+    timerRAF = requestAnimationFrame(tick);
+  }
+
+  function submitAnswer(side){
+    if(!roundActive || gameOver) return;
+    const val   = side === 'A' ? answerA : answerB;
+    const q     = side === 'A' ? qA : qB;
+    const ansEl = side === 'A' ? ansAEl : ansBEl;
+    if(val === '') return;
+
+    if(val === q.answer){
+      // Pity guard: eases the AI off the finishing pull a couple of times so a
+      // fresh player isn't steamrolled — but it can only block a HANDFUL of
+      // genuine correct finishes. Keep solving and the AI WILL close it out.
+      if(side === 'B' && pityActive && (position + 1) >= LIMIT && pityBlocksUsed < 2){
+        pityBlocksUsed++;
+        SFX.wrong();
+        ansEl.textContent = val;
+        ansEl.className = 'answer-box bad';
+        setTimeout(function(){
+          ansEl.className = 'answer-box';
+          answerB = ''; ansBEl.textContent = '';
+        }, 340);
+        return;
+      }
+
+      roundActive = false;
+      cancelAnimationFrame(timerRAF);
+      SFX.correct();
+      ansEl.className = 'answer-box ok';
+      const box = side === 'A' ? padBoxA : padBoxB;
+      box.classList.add('flash');
+      setTimeout(function(){ box.classList.remove('flash'); }, 500);
+
+      if(side === 'A'){
+        solvedA++;
+        position = Math.max(-LIMIT, position - 1);
+        wrongStreakA = 0;
+        userCorrectCount++;
+        const elapsed = performance.now() - roundStartTime;
+        userTimeSamples.push(elapsed);
+        if(userTimeSamples.length > 5) userTimeSamples.shift();
+
+        // ---- reward: career stats + badges (coins now only come from wins/ads) ----
+        save.careerCorrect++;
+        perfectStreakCount++;
+        if(elapsed <= 5000) save.gotSpeed = true;
+        if(perfectStreakCount >= 5) save.gotPerfect = true;
+        checkBadges();
+        // From the 3rd game onward, playing well enough (25+ solved) earns the win
+        if(mode === 'online' && userGamesPlayed >= 3 && solvedA >= 25) pityActive = true;
+
+        if(mode === 'online'){
+          userMissStreak = 0;
+          userRoundStreak++;
+          // Early hot streak (still under ~6-7 solved) — throw a couple of hard ones in
+          if(userRoundStreak >= 3 && solvedA <= 8) hardBurstRounds = 2;
+        }
+      } else {
+        solvedB++;
+        position = Math.min(LIMIT, position + 1);
+        if(mode === 'online'){
+          userRoundStreak = 0;
+          userMissStreak++;
+          // Well into the match but cold for 3 rounds straight — let the AI actually close it out
+          if(userMissStreak >= 3 && solvedA > 20) pityActive = false;
+        }
+      }
+      totalSolved++;
+      updateVisual();
+      setTimeout(function(){
+        if(Math.abs(position) >= LIMIT) endGame(position < 0 ? 'A' : 'B');
+        else newRound();
+      }, 620);
+    } else {
+      SFX.wrong();
+      ansEl.textContent = val;
+      ansEl.className = 'answer-box bad';
+      if(side === 'A'){
+        wrongStreakA++;
+        userWrongCount++;
+        perfectStreakCount = 0;
+        if(wrongStreakA >= 2 && mode === 'online' && !aiHandicappedThisRound && roundActive){
+          aiHandicappedThisRound = true;
+          helpUserNextRound = true; // next round: easier question for the user, harder for the AI
+        }
+        chancesLeftA--;
+        if(chancesLeftA <= 0){
+          setTimeout(function(){
+            ansEl.className = 'answer-box';
+            answerA = ''; ansAEl.textContent = '';
+            showChanceOverlay();
+          }, 340);
+          return;
+        }
+      }
+      setTimeout(function(){
+        ansEl.className = 'answer-box';
+        if(side === 'A'){ answerA = ''; ansAEl.textContent = ''; }
+        else { answerB = ''; ansBEl.textContent = ''; }
+      }, 340);
+    }
+  }
+
+  function handleKey(side, key){
+    if(!roundActive || gameOver) return;
+    if(side === 'B' && mode === 'online') return; // AI controls this side in online mode
+    SFX.key();
+    const q = side === 'A' ? qA : qB;
+    if(key === 'dot' && q && q.op === 'sqrt') return; // shows √ for this question — decorative, no input needed
+
+    if(side === 'A'){
+      if(key === 'del') answerA = answerA.slice(0,-1);
+      else if(answerA.length < 4) answerA += (key === 'dot' ? '.' : key);
+      ansAEl.textContent = answerA;
+      if(qA && answerA.length === qA.answer.length) submitAnswer('A');
+    } else {
+      if(key === 'del') answerB = answerB.slice(0,-1);
+      else if(answerB.length < 4) answerB += (key === 'dot' ? '.' : key);
+      ansBEl.textContent = answerB;
+      if(qB && answerB.length === qB.answer.length) submitAnswer('B');
+    }
+  }
+
+  function buildPad(container, side){
+    const keys = ['1','2','3','4','5','6','7','8','9','del','0','dot'];
+    container.innerHTML = '';
+    keys.forEach(function(k){
+      const btn = document.createElement('div');
+      btn.className = 'key';
+      if(k === 'del'){ btn.classList.add('back'); btn.textContent = '⌫'; }
+      else if(k === 'dot'){ btn.classList.add('go'); btn.textContent = '.'; btn.id = 'dot' + side; }
+      else btn.textContent = k;
+      // touchstart so two players tapping at the same instant both register
+      btn.addEventListener('touchstart', function(e){
+        e.preventDefault();
+        handleKey(side, k);
+      }, {passive:false});
+      btn.addEventListener('click', function(){ handleKey(side, k); });
+      container.appendChild(btn);
+    });
+  }
+
+  function endGame(winner){
+    gameOver = true;
+    roundActive = false;
+    cancelAnimationFrame(timerRAF);
+    clearTimeout(aiTimeout);
+    showThinking(false);
+    SFX.win();
+    const winnerName = winner === 'A' ? teamNameAEl.textContent : teamNameBEl.textContent;
+    winTitle.textContent = winnerName + ' wins!';
+    let subText = 'Solved ' + (winner === 'A' ? solvedA : solvedB) + ' problems and pulled the ribbon across.';
+    if(winner === 'A'){
+      addCoins(25);
+      save.careerWins++;
+      checkBadges();
+      subText += ' +25 🪙 bonus!';
+    }
+    winSub.textContent = subText;
+    overlay.classList.add('show');
+  }
+
+  function resetGame(){
+    position = 0; gameOver = false;
+    solvedA = 0; solvedB = 0;
+    wrongStreakA = 0; aiHandicappedThisRound = false; helpUserNextRound = false;
+    perfectStreakCount = 0; chancesLeftA = 5; pityBlocksUsed = 0;
+    userTimeSamples = [];
+    userCorrectCount = 0; userWrongCount = 0; totalSolved = 0;
+    userRoundStreak = 0; userMissStreak = 0; hardBurstRounds = 0;
+
+    if(mode === 'online'){
+      userGamesPlayed++;
+      // The user's very first game plays out naturally. Their 2nd game is a
+      // guaranteed win (keeps a brand-new player from bouncing off a loss
+      // streak). From the 3rd game on, a win has to be earned — see the
+      // 25-solved check in submitAnswer.
+      pityActive = (userGamesPlayed === 2);
+    } else {
+      pityActive = false;
+    }
+    updateVisual();
+    overlay.classList.remove('show');
+    newRound();
+  }
+
+  function setMode(m){
+    mode = m;
+    if(m === 'friend'){
+      teamNameAEl.textContent = 'Team A';
+      teamNameBEl.textContent = 'Team B';
+      padTitleAEl.textContent = 'Team A';
+      padTitleBEl.textContent = 'Team B';
+      padBoxB.classList.remove('ai-mode');
+    } else {
+      teamNameAEl.textContent = playerName;
+      teamNameBEl.textContent = opponentName;
+      padTitleAEl.textContent = playerName;
+      padTitleBEl.textContent = opponentName;
+      padBoxB.classList.add('ai-mode');
+    }
+    modeOverlay.classList.remove('show');
+    nameOverlay.classList.remove('show');
+    resetGame();
+  }
+
+  buildPad(document.getElementById('padA'), 'A');
+  buildPad(document.getElementById('padB'), 'B');
+  document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+
+  function shareScore(){
+    const solved = solvedA;
+    const text = 'I solved ' + solved + ' questions in Brain Exercise: Math Tug of War! Can you beat my score?';
+    const url = 'https://t.me/Mathtugofwar_bot';
+    const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
+    if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink){
+      window.Telegram.WebApp.openTelegramLink(shareUrl);
+    } else if(navigator.share){
+      navigator.share({ title:'Brain Exercise', text:text, url:url }).catch(function(){});
+    } else {
+      window.open(shareUrl, '_blank');
+    }
+  }
+  document.getElementById('shareBtn').addEventListener('click', shareScore);
+
+  const muteBtn = document.getElementById('muteBtn');
+  muteBtn.addEventListener('click', function(){
+    const on = !SFX.isEnabled();
+    SFX.setEnabled(on);
+    if(on){ SFX.unlock(); muteBtn.textContent = '🔊'; muteBtn.classList.remove('muted'); }
+    else { muteBtn.textContent = '🔇'; muteBtn.classList.add('muted'); }
+  });
+
+  // ---- mode selection ----
+  document.getElementById('btnFriend').addEventListener('click', function(){
+    SFX.unlock();
+    setMode('friend');
+  });
+  document.getElementById('btnOnline').addEventListener('click', function(){
+    SFX.unlock();
+    modeOverlay.classList.remove('show');
+    nameOverlay.classList.add('show');
+    setTimeout(function(){ nameInput.focus(); }, 200);
+  });
+  function startOnline(){
+    const val = nameInput.value.trim();
+    playerName = val ? val.slice(0,14) : 'You';
+    opponentName = INDIAN_NAMES[randInt(0, INDIAN_NAMES.length - 1)];
+
+    nameOverlay.classList.remove('show');
+    searchOverlay.classList.add('show');
+    searchTitleEl.textContent = 'Finding an opponent...';
+    searchSubEl.textContent = 'Hang tight, matching you with a player';
+
+    setTimeout(function(){
+      searchTitleEl.textContent = 'Opponent found!';
+      searchSubEl.textContent = opponentName + ' has joined the match';
+    }, 1500);
+
+    setTimeout(function(){
+      searchOverlay.classList.remove('show');
+      setMode('online');
+    }, 2600);
+  }
+  document.getElementById('btnStartOnline').addEventListener('click', startOnline);
+  nameInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') startOnline(); });
+
+  document.getElementById('modeBtn').addEventListener('click', function(){
+    cancelAnimationFrame(timerRAF);
+    clearTimeout(aiTimeout);
+    showThinking(false);
+    gameOver = true;
+    overlay.classList.remove('show');
+    nameOverlay.classList.remove('show');
+    searchOverlay.classList.remove('show');
+    modeOverlay.classList.add('show');
+  });
+
+  document.getElementById('rewardsBtn').addEventListener('click', function(){
+    buildRewardsScreen();
+    rewardsOverlay.classList.add('show');
+  });
+  document.getElementById('rewardsCloseBtn').addEventListener('click', function(){
+    rewardsOverlay.classList.remove('show');
+  });
+  document.getElementById('rewardsWatchAdBtn').addEventListener('click', function(){
+    watchAdForCoins(function(){ buildRewardsScreen(); });
+  });
+  document.getElementById('chanceUseCoinsBtn').addEventListener('click', function(){
+    if(spendCoins(CHANCE_COST)) resumeAfterChance();
+  });
+  document.getElementById('chanceWatchAdBtn').addEventListener('click', function(){
+    watchAdForCoins(refreshChanceButton);
+  });
+
+  updateCoinDisplay();
+  applyRibbonColor();
+  updateVisual();
+  initFirebaseAndLogin();
+})();
+</script>
+
+</body>
+</html>
