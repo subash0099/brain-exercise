@@ -1555,7 +1555,7 @@
     }
     winSub.textContent = subText;
     const continueBtn = document.getElementById('continueMatchBtn');
-    if(winner === 'B'){
+    if(winner === 'B' && mode === 'online'){
       continueBtn.style.display = 'inline-block';
       refreshContinueButton();
     } else {
@@ -1567,6 +1567,7 @@
   const CONTINUE_COST = 25;
   function refreshContinueButton(){
     const btn = document.getElementById('continueMatchBtn');
+    btn.style.display = 'inline-block';
     if(save.coins >= CONTINUE_COST){
       btn.textContent = '🪙 Use 25 Coins & Continue';
     } else {
@@ -1626,20 +1627,6 @@
     modeOverlay.classList.remove('show');
     nameOverlay.classList.remove('show');
     resetGame();
-
-    // ---- TESTING: In-app Interstitial format (automatic ads during a match) ----
-    // Shows up to 2 ads within 6 minutes, 30s apart, starting 5s after the match
-    // begins. This is here purely so you can compare it against the Rewarded
-    // Interstitial (Watch Ad button) and Rewarded Popup - remove this block if
-    // you decide automatic ads aren't the right fit.
-    try{
-      if(typeof show_11885548 === 'function'){
-        show_11885548({
-          type: 'inApp',
-          inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
-        });
-      }
-    }catch(e){ console.warn('In-app interstitial not available:', e); }
   }
 
   buildPad(document.getElementById('padA'), 'A');
@@ -1735,7 +1722,7 @@
       if(spendCoins(CONTINUE_COST)) continueMatch();
     } else {
       watchAdForCoins(function(){
-        if(spendCoins(CONTINUE_COST)) continueMatch();
+        continueMatch();
       });
     }
   });
