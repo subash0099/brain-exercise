@@ -1176,16 +1176,18 @@
     startTimer();
   }
   /**
-   * Plays a (simulated) rewarded ad and adds AD_REWARD coins on completion.
-   * Doesn't spend anything automatically - just tops up the balance, so it
-   * can be used both mid-game (chance overlay) and anytime (Rewards screen).
+   * Plays a (simulated) rewarded ad. By default adds AD_REWARD coins on
+   * completion (used by the Rewards screen and Chance overlay); pass
+   * grantCoins=false to just play the ad and skip the coin reward (used by
+   * Continue Match, where watching the ad itself is the reward).
    */
-  function watchAdForCoins(onComplete){
+  function watchAdForCoins(onComplete, grantCoins){
+    if(grantCoins === undefined) grantCoins = true;
     // Real Monetag rewarded ad (zone 11885548). Monetag's SDK shows its own
     // full-screen ad UI and resolves the promise once it's been watched.
     if(typeof show_11885548 === 'function'){
       show_11885548().then(function(){
-        addCoins(AD_REWARD);
+        if(grantCoins) addCoins(AD_REWARD);
         if(onComplete) onComplete();
       }).catch(function(err){
         console.warn('Ad not available:', err);
@@ -1206,11 +1208,12 @@
       } else {
         clearInterval(iv);
         adOverlay.classList.remove('show');
-        addCoins(AD_REWARD);
+        if(grantCoins) addCoins(AD_REWARD);
         if(onComplete) onComplete();
       }
     }, 1000);
   }
+
 
   function showThinking(v){
     aiThinkEl.classList.toggle('show', !!v);
@@ -1723,7 +1726,7 @@
     } else {
       watchAdForCoins(function(){
         continueMatch();
-      });
+      }, false);
     }
   });
 
