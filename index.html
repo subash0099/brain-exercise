@@ -616,6 +616,41 @@
   .chance-btn-coins:disabled{ opacity:.45; cursor:not-allowed; }
   .chance-btn-ad{ background:linear-gradient(180deg,var(--blue-soft),var(--blue)); }
 
+  /* ---------- RANK / DAILY SPIN (rewards screen additions) ---------- */
+  .rank-row{ font-size:12px; font-weight:800; color:var(--navy); background:#EAF2FC; border-radius:99px; padding:5px 14px; margin:0 auto 8px; display:inline-block; }
+  .name-badge{ font-size:14px; margin-left:2px; }
+  .confetti-piece{
+    position:absolute; top:-10px; width:8px; height:14px; opacity:.9;
+    pointer-events:none; animation:confetti-fall linear forwards; z-index:60;
+  }
+  @keyframes confetti-fall{ to{ transform:translateY(620px) rotate(540deg); opacity:0; } }
+
+  /* ---------- SPIN WHEEL ---------- */
+  .spin-card{ padding-bottom:18px; }
+  .wheel-wrap{ position:relative; width:210px; height:210px; margin:6px auto 16px; }
+  .wheel-pointer{ position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:22px; z-index:5; }
+  .wheel{
+    width:210px; height:210px; border-radius:50%;
+    border:6px solid var(--navy);
+    position:relative;
+    background:conic-gradient(
+      #F5C542 0deg 72deg,
+      #4FCB2F 72deg 144deg,
+      #9AA7B8 144deg 216deg,
+      #FF6B6B 216deg 288deg,
+      #3E84E6 288deg 360deg
+    );
+    transition:transform 3.2s cubic-bezier(.17,.67,.32,1.02);
+    box-shadow:0 6px 0 rgba(0,0,0,.3);
+  }
+  .wheel-seg-label{
+    position:absolute; top:50%; left:50%; width:64px; margin-left:-32px; margin-top:-30px;
+    text-align:center; font-size:11px; font-weight:800; color:#0F2440; line-height:1.15;
+  }
+  .wheel-seg-label span{ display:inline-block; }
+  .spin-go-btn{ margin:0 auto 8px; display:block; }
+  .spin-cooldown{ font-size:11px; font-weight:700; color:#5A7391; margin-top:-4px; margin-bottom:8px; }
+
   /* ---------- AD OVERLAY (simulated) ---------- */
   .ad-ring{
     width:64px; height:64px; margin:6px auto 14px;
@@ -744,15 +779,45 @@
       <div class="win-trophy">🎁</div>
       <h2>Rewards</h2>
       <div class="rewards-coin-row">🪙 <span id="rewardsCoinCount">0</span></div>
+      <div class="rank-row" id="rankRow"></div>
       <button class="chance-btn chance-btn-ad" id="rewardsWatchAdBtn" style="margin:0 auto 4px;display:block;">📺 Watch Ad (+25 coins)</button>
 
-      <div class="rewards-section-title">Ribbon Colors</div>
+      <div class="rewards-section-title">🎡 Daily Spin</div>
+      <div class="wheel-wrap">
+        <div class="wheel-pointer">▼</div>
+        <div class="wheel" id="spinWheel">
+          <div class="wheel-seg-label" style="transform:rotate(36deg) translateY(-72px) rotate(-36deg);"><span>10</span></div>
+          <div class="wheel-seg-label" style="transform:rotate(108deg) translateY(-72px) rotate(-108deg);"><span>5</span></div>
+          <div class="wheel-seg-label" style="transform:rotate(180deg) translateY(-72px) rotate(-180deg);"><span>😢</span></div>
+          <div class="wheel-seg-label" style="transform:rotate(252deg) translateY(-72px) rotate(-252deg);"><span>50</span></div>
+          <div class="wheel-seg-label" style="transform:rotate(324deg) translateY(-72px) rotate(-324deg);"><span>25</span></div>
+        </div>
+      </div>
+      <div class="spin-cooldown" id="spinResult"></div>
+      <button class="chance-btn chance-btn-coins spin-go-btn" id="dailySpinBtn">🎡 Spin Now</button>
+
+      <div class="rewards-section-title">Rope Colors</div>
       <div class="ribbon-grid" id="ribbonGrid"></div>
 
-      <div class="rewards-section-title">Badges</div>
+      <div class="rewards-section-title">Win Effects</div>
+      <div class="ribbon-grid" id="winfxGrid"></div>
+
+      <div class="rewards-section-title">Name Badge</div>
+      <div class="ribbon-grid" id="nameBadgeGrid"></div>
+
+      <div class="rewards-section-title">Rank Ladder</div>
       <div class="badge-grid" id="badgeGrid"></div>
 
       <button class="rewards-close" id="rewardsCloseBtn">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="chestOverlay">
+    <div class="win-card mode-card">
+      <div class="win-trophy">🎁</div>
+      <h2>Milestone Chest!</h2>
+      <p class="mode-sub" id="chestSub">Every 5th win unlocks a bonus chest. Open it!</p>
+      <button class="chance-btn chance-btn-coins" id="chestOpenBtn">Open Chest</button>
     </div>
   </div>
 
@@ -762,7 +827,7 @@
       <h2>Out of chances!</h2>
       <p class="mode-sub">You've used all 5 tries on this question. Get one more chance:</p>
       <div class="chance-btns">
-        <button class="chance-btn chance-btn-coins" id="chanceUseCoinsBtn">🪙 Use 30 Coins</button>
+        <button class="chance-btn chance-btn-coins" id="chanceUseCoinsBtn">🪙 Use 10 Coins</button>
         <button class="chance-btn chance-btn-ad" id="chanceWatchAdBtn">📺 Watch Ad (+25 coins)</button>
       </div>
     </div>
@@ -894,16 +959,49 @@
     { id:'red',     name:'Classic Red', cost:0,   color:'var(--red)' },
     { id:'gold',    name:'Gold',        cost:100, color:'linear-gradient(160deg,#FFE9A0,#F5C542)' },
     { id:'purple',  name:'Purple',      cost:250, color:'linear-gradient(160deg,#B98CF0,#7B3FD1)' },
-    { id:'rainbow', name:'Rainbow',     cost:500, color:'linear-gradient(160deg,#FF6B6B,#FFD166,#4FCB2F,#3E84E6,#B98CF0)' }
+    { id:'rainbow', name:'Rainbow',     cost:500, color:'linear-gradient(160deg,#FF6B6B,#FFD166,#4FCB2F,#3E84E6,#B98CF0)' },
+    { id:'stripe',  name:'Candy Stripe',cost:150, color:'repeating-linear-gradient(135deg,var(--red) 0 8px,#fff 8px 16px)' },
+    { id:'glitter', name:'Glitter Gold',cost:300, color:'linear-gradient(160deg,#FFF6D0,#FFD166,#F5C542,#FFF6D0)' },
+    { id:'chain',   name:'Chain Link',  cost:600, color:'repeating-linear-gradient(90deg,#9A9A9A 0 5px,#3E3E3E 5px 10px)' }
   ];
-  const BADGES = [
-    { id:'firstWin',   name:'First Win',        icon:'🏅', check:function(s){ return s.careerWins >= 1; } },
-    { id:'tenWins',    name:'10 Wins',          icon:'🏆', check:function(s){ return s.careerWins >= 10; } },
-    { id:'fifty',      name:'50 Correct',       icon:'🧠', check:function(s){ return s.careerCorrect >= 50; } },
-    { id:'hundred',    name:'100 Correct',      icon:'💯', check:function(s){ return s.careerCorrect >= 100; } },
-    { id:'speed',      name:'Speed Solver',     icon:'⚡', check:function(s){ return !!s.gotSpeed; } },
-    { id:'perfect',    name:'Perfect Streak',   icon:'🔥', check:function(s){ return !!s.gotPerfect; } }
+  const WINFX = [
+    { id:'none',      name:'Simple Win', cost:0,   icon:'⭐' },
+    { id:'confetti',  name:'Confetti',   cost:150, icon:'🎊' },
+    { id:'fireworks', name:'Fireworks',  cost:350, icon:'🎆' }
   ];
+  const NAME_BADGES = [
+    { id:'none',  name:'No Badge', cost:0,   icon:'' },
+    { id:'crown', name:'Crown',    cost:120, icon:'👑' },
+    { id:'fire',  name:'On Fire',  cost:120, icon:'🔥' },
+    { id:'star',  name:'Star',     cost:120, icon:'⭐' }
+  ];
+  // Automatic level badge, earned purely by match wins (not purchasable) — shown
+  // next to the player's name in the blue HUD box only (never in the keypad
+  // title). Checked highest-first.
+  const LEVEL_BADGES = [
+    { min:50, name:'Warlord',  icon:'⚔️' },
+    { min:40, name:'Elite',    icon:'🎖️' },
+    { min:30, name:'Diamond',  icon:'💎' },
+    { min:20, name:'Gold',     icon:'🥇' },
+    { min:10, name:'Silver',   icon:'🥈' },
+    { min:5,  name:'Bronze',   icon:'🥉' },
+    { min:1,  name:'Starter',  icon:'💡' }
+  ];
+  // Same list, lowest-first — used to roll a comparable badge for the rival
+  // (red box), so their rank badge sits near the player's own level.
+  const LEVEL_BADGES_ASC = LEVEL_BADGES.slice().reverse();
+  // Daily Spin wheel segments, laid out clockwise starting at the top (matches
+  // the conic-gradient slice order in .wheel's CSS). "50" is a decoy — its
+  // weight is 0 so the wheel visually offers it but can never actually land
+  // there, purely to keep the player spinning. "25" is intentionally rare.
+  const SPIN_SEGMENTS = [
+    { id:'c10',  coins:10, weight:30 },
+    { id:'c5',   coins:5,  weight:36 },
+    { id:'miss', coins:0,  weight:20, message:'😢 Better luck next time!' },
+    { id:'c50',  coins:50, weight:0  },
+    { id:'c25',  coins:25, weight:14 }
+  ];
+  const LOGIN_REWARDS = [10,15,20,25,30,40,60];
   const SAVE_KEY = 'brainExerciseSave';
 
   // =========================================================================
@@ -937,7 +1035,15 @@
       careerCorrect: d.careerCorrect || 0,
       gotSpeed: !!d.gotSpeed,
       gotPerfect: !!d.gotPerfect,
-      earnedBadges: d.earnedBadges || []
+      earnedBadges: d.earnedBadges || [],
+      unlockedWinFx: d.unlockedWinFx || ['none'],
+      selectedWinFx: d.selectedWinFx || 'none',
+      unlockedNameBadges: d.unlockedNameBadges || ['none'],
+      selectedNameBadge: d.selectedNameBadge || 'none',
+      lastLoginDate: d.lastLoginDate || null,
+      loginStreak: d.loginStreak || 0,
+      lastSpinTime: d.lastSpinTime || 0,
+      highestRankNotified: d.highestRankNotified || 0
     };
   }
   let save = loadSave();
@@ -991,7 +1097,15 @@
           careerCorrect: d.careerCorrect || 0,
           gotSpeed: !!d.gotSpeed,
           gotPerfect: !!d.gotPerfect,
-          earnedBadges: d.earnedBadges || []
+          earnedBadges: d.earnedBadges || [],
+          unlockedWinFx: d.unlockedWinFx || ['none'],
+          selectedWinFx: d.selectedWinFx || 'none',
+          unlockedNameBadges: d.unlockedNameBadges || ['none'],
+          selectedNameBadge: d.selectedNameBadge || 'none',
+          lastLoginDate: d.lastLoginDate || null,
+          loginStreak: d.loginStreak || 0,
+          lastSpinTime: d.lastSpinTime || 0,
+          highestRankNotified: d.highestRankNotified || 0
         };
         persistSave(); // keep localStorage mirror in sync too
         updateCoinDisplay();
@@ -1004,7 +1118,7 @@
     }
   }
 
-  let chancesLeftA = 5;          // wrong-attempt chances on the CURRENT question
+  let chancesLeftA = 3;          // wrong-attempt chances on the CURRENT question
   let perfectStreakCount = 0;    // consecutive correct answers this match, no misses
 
   // adaptive difficulty state (Play Online): AI speed reacts to how the user is doing
@@ -1026,6 +1140,7 @@
   let position = 0;
   let roundActive = true;
   let gameOver = true;
+  let pendingChestReward = 0;     // coins waiting inside an unopened milestone chest
   let qA, qB;
   let answerA = '', answerB = '';
   let solvedA = 0, solvedB = 0;
@@ -1069,6 +1184,14 @@
   const adOverlay = document.getElementById('adOverlay');
   const adTitleEl = document.getElementById('adTitle');
   const adSubEl = document.getElementById('adSub');
+  const rankRowEl = document.getElementById('rankRow');
+  const winfxGridEl = document.getElementById('winfxGrid');
+  const nameBadgeGridEl = document.getElementById('nameBadgeGrid');
+  const spinWheelEl = document.getElementById('spinWheel');
+  const spinResultEl = document.getElementById('spinResult');
+  const dailySpinBtnEl = document.getElementById('dailySpinBtn');
+  const chestOverlay = document.getElementById('chestOverlay');
+  const chestSubEl = document.getElementById('chestSub');
 
   // ---- coin + reward helpers ----
   function updateCoinDisplay(){
@@ -1098,21 +1221,191 @@
     const r = RIBBONS.find(function(x){ return x.id === save.selectedRibbon; }) || RIBBONS[0];
     ribbon.style.background = r.color;
   }
-  function showBadgeToast(name){
-    badgeToastEl.textContent = '🏅 New Badge: ' + name + '!';
+  function showBadgeToast(message){
+    badgeToastEl.textContent = message;
     badgeToastEl.classList.add('show');
     setTimeout(function(){ badgeToastEl.classList.remove('show'); }, 2400);
   }
   function checkBadges(){
-    BADGES.forEach(function(b){
-      if(save.earnedBadges.indexOf(b.id) === -1 && b.check(save)){
-        save.earnedBadges.push(b.id);
-        showBadgeToast(b.name);
-      }
-    });
+    const lvl = getLevelBadge();
+    if(lvl && lvl.min > save.highestRankNotified){
+      save.highestRankNotified = lvl.min;
+      showBadgeToast(lvl.icon + ' Rank Up: ' + lvl.name + '!');
+    }
     persistSave();
   }
+  function todayStr(){
+    const d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+  }
+  function getLevelBadge(){
+    for(let i=0;i<LEVEL_BADGES.length;i++){
+      if(save.careerWins >= LEVEL_BADGES[i].min) return LEVEL_BADGES[i];
+    }
+    return null; // no wins yet — no badge
+  }
+  function getRank(){
+    return getLevelBadge() || { name:'Rookie', icon:'🌱' };
+  }
+  function nameBadgePrefix(){
+    const b = NAME_BADGES.find(function(x){ return x.id === save.selectedNameBadge; });
+    return (b && b.icon) ? (b.icon + ' ') : '';
+  }
+  // Blue box (teamNameA) gets the player's level badge; the keypad title
+  // (padTitleA) never shows it.
+  function applyNameBadge(){
+    const lvl = getLevelBadge();
+    const lvlSuffix = lvl ? (' ' + lvl.icon) : '';
+    const baseName = (mode === 'friend') ? 'Team A' : playerName;
+    teamNameAEl.textContent = nameBadgePrefix() + baseName + lvlSuffix;
+    padTitleAEl.textContent = nameBadgePrefix() + baseName;
+  }
+  // Red box (teamNameB) gets a rival badge rolled once per match, within
+  // ±2 levels of the player's own rank — never shown in the keypad title.
+  let opponentLevelBadge = null;
+  function rollOpponentBadge(){
+    const myLvl = getLevelBadge();
+    if(!myLvl){ opponentLevelBadge = null; return; }
+    const idx = LEVEL_BADGES_ASC.findIndex(function(b){ return b.min === myLvl.min; });
+    const oppIdx = Math.max(0, Math.min(LEVEL_BADGES_ASC.length - 1, idx + randInt(-2, 2)));
+    opponentLevelBadge = LEVEL_BADGES_ASC[oppIdx];
+  }
+  function applyOpponentName(){
+    const baseName = (mode === 'friend') ? 'Team B' : opponentName;
+    const prefix = opponentLevelBadge ? (opponentLevelBadge.icon + ' ') : '';
+    teamNameBEl.textContent = prefix + baseName;
+    padTitleBEl.textContent = baseName;
+  }
+  // Generic "pick one, unlock with coins" row — used for Win Effects and Name Badges,
+  // the same pattern the Ribbon Colors grid already uses.
+  function buildSelectableRow(containerEl, list, unlockedKey, selectedKey, onChanged){
+    containerEl.innerHTML = '';
+    list.forEach(function(it){
+      const owned = save[unlockedKey].indexOf(it.id) !== -1;
+      const selected = save[selectedKey] === it.id;
+      const item = document.createElement('div');
+      item.className = 'ribbon-item' + (owned ? '' : ' locked') + (selected ? ' selected' : '');
+      const swatchStyle = it.color ? ('background:' + it.color) :
+        'background:#DCE8F7;font-size:18px;display:flex;align-items:center;justify-content:center;';
+      item.innerHTML =
+        '<div class="ribbon-swatch" style="' + swatchStyle + '">' + (it.icon || '') + '</div>' +
+        '<div class="ribbon-name">' + it.name + '</div>' +
+        (selected ? '<div class="ribbon-tag">Selected</div>' :
+          owned ? '<div class="ribbon-tag">Tap to select</div>' :
+          '<div class="ribbon-cost">🪙 ' + it.cost + '</div>');
+      item.addEventListener('click', function(){
+        if(owned){
+          save[selectedKey] = it.id;
+          persistSave();
+          if(onChanged) onChanged();
+          buildRewardsScreen();
+        } else if(spendCoins(it.cost)){
+          save[unlockedKey].push(it.id);
+          save[selectedKey] = it.id;
+          persistSave();
+          if(onChanged) onChanged();
+          buildRewardsScreen();
+        } else {
+          showCoinToast('Not enough coins', false);
+        }
+      });
+      containerEl.appendChild(item);
+    });
+  }
+  function pickWeightedSegment(){
+    const total = SPIN_SEGMENTS.reduce(function(s,x){ return s + x.weight; }, 0);
+    let r = Math.random() * total;
+    for(let i=0;i<SPIN_SEGMENTS.length;i++){
+      if(r < SPIN_SEGMENTS[i].weight) return i;
+      r -= SPIN_SEGMENTS[i].weight;
+    }
+    return 0;
+  }
+  const SPIN_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+  let wheelRotation = 0;
+  function refreshDailySpinBtn(){
+    const remain = SPIN_COOLDOWN_MS - (Date.now() - (save.lastSpinTime || 0));
+    if(remain <= 0){
+      dailySpinBtnEl.textContent = '🎡 Spin Now';
+      dailySpinBtnEl.disabled = false;
+    } else {
+      const h = Math.floor(remain / 3600000);
+      const m = Math.floor((remain % 3600000) / 60000);
+      dailySpinBtnEl.textContent = '⏳ Next spin in ' + h + 'h ' + m + 'm';
+      dailySpinBtnEl.disabled = true;
+    }
+  }
+  function spinWheel(){
+    if(Date.now() - (save.lastSpinTime || 0) < SPIN_COOLDOWN_MS) return;
+    dailySpinBtnEl.disabled = true;
+    spinResultEl.textContent = '';
+    const idx = pickWeightedSegment();
+    const seg = SPIN_SEGMENTS[idx];
+    const centerAngle = idx * 72 + 36;
+    wheelRotation += 5 * 360 + ((360 - centerAngle) % 360);
+    spinWheelEl.style.transform = 'rotate(' + wheelRotation + 'deg)';
+    save.lastSpinTime = Date.now();
+    persistSave();
+    setTimeout(function(){
+      if(seg.coins > 0){
+        addCoins(seg.coins);
+        spinResultEl.textContent = '🎉 You won ' + seg.coins + ' 🪙!';
+      } else {
+        spinResultEl.textContent = seg.message || 'Better luck next time!';
+      }
+      refreshDailySpinBtn();
+    }, 3300);
+  }
+  function checkDailyLogin(){
+    const today = todayStr();
+    if(save.lastLoginDate === today) return;
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    const yesterday = y.getFullYear() + '-' + (y.getMonth()+1) + '-' + y.getDate();
+    save.loginStreak = (save.lastLoginDate === yesterday) ? (save.loginStreak + 1) : 1;
+    save.lastLoginDate = today;
+    persistSave();
+    const idx = Math.min(save.loginStreak, LOGIN_REWARDS.length) - 1;
+    const reward = LOGIN_REWARDS[idx];
+    setTimeout(function(){
+      addCoins(reward);
+      showBadgeToast('📅 Day ' + save.loginStreak + ' Login Bonus!');
+    }, 900);
+  }
+  function maybeShowMilestoneChest(){
+    if(save.careerWins > 0 && save.careerWins % 5 === 0){
+      pendingChestReward = randInt(30, 90);
+      const jackpot = Math.random() < 0.2;
+      if(jackpot) pendingChestReward *= 2;
+      chestSubEl.textContent = jackpot ?
+        'Every 5th win unlocks a chest — and this one looks shiny!' :
+        'Every 5th win unlocks a bonus chest. Open it!';
+      setTimeout(function(){ chestOverlay.classList.add('show'); }, 700);
+    }
+  }
+  function spawnWinEffect(){
+    if(save.selectedWinFx === 'none') return;
+    const fireworks = save.selectedWinFx === 'fireworks';
+    const colors = fireworks ?
+      ['#FF6B6B','#FFD166','#4FCB2F','#3E84E6','#B98CF0','#ffffff'] :
+      ['#F5C542','#FF6B6B','#3E84E6','#4FCB2F'];
+    const count = fireworks ? 50 : 28;
+    for(let i=0;i<count;i++){
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = randInt(4,96) + '%';
+      piece.style.background = colors[randInt(0, colors.length-1)];
+      piece.style.animationDuration = (1.1 + Math.random()*1.1) + 's';
+      piece.style.animationDelay = (Math.random()*0.4) + 's';
+      stage.appendChild(piece);
+      setTimeout(function(){ piece.remove(); }, 3000);
+    }
+  }
   function buildRewardsScreen(){
+    const r = getRank();
+    rankRowEl.textContent = r.icon + ' ' + r.name + ' · ' + save.careerWins + ' wins';
+    refreshDailySpinBtn();
+    buildSelectableRow(winfxGridEl, WINFX, 'unlockedWinFx', 'selectedWinFx', null);
+    buildSelectableRow(nameBadgeGridEl, NAME_BADGES, 'unlockedNameBadges', 'selectedNameBadge', applyNameBadge);
     ribbonGridEl.innerHTML = '';
     RIBBONS.forEach(function(r){
       const owned = save.unlockedRibbons.indexOf(r.id) !== -1;
@@ -1145,22 +1438,24 @@
     });
 
     badgeGridEl.innerHTML = '';
-    BADGES.forEach(function(b){
-      const earned = save.earnedBadges.indexOf(b.id) !== -1;
+    LEVEL_BADGES_ASC.forEach(function(lv){
+      const earned = save.careerWins >= lv.min;
       const item = document.createElement('div');
       item.className = 'badge-item' + (earned ? '' : ' locked');
-      item.innerHTML = '<div class="badge-icon">' + b.icon + '</div><div class="badge-name">' + b.name + '</div>';
+      item.innerHTML = '<div class="badge-icon">' + lv.icon + '</div><div class="badge-name">' + lv.name + '</div>';
       badgeGridEl.appendChild(item);
     });
   }
 
   // ---- coin economy: coins now only come from wins (+25) or watching ads (+25 each) ----
-  const CHANCE_COST = 30;
+  const CHANCE_COST = 10;
   const AD_REWARD = 25;
 
   // ---- chance-exhausted flow: spend coins or watch ads to top up, for one more try ----
   function refreshChanceButton(){
-    document.getElementById('chanceUseCoinsBtn').disabled = save.coins < CHANCE_COST;
+    const btn = document.getElementById('chanceUseCoinsBtn');
+    btn.disabled = save.coins < CHANCE_COST;
+    btn.textContent = '🪙 Use ' + CHANCE_COST + ' Coins';
   }
   function showChanceOverlay(){
     cancelAnimationFrame(timerRAF);
@@ -1434,7 +1729,7 @@
         solvedA++;
         position = Math.max(-LIMIT, position - 1);
         wrongStreakA = 0;
-        chancesLeftA = 5;
+        chancesLeftA = 3;
         userCorrectCount++;
         const elapsed = performance.now() - roundStartTime;
         userTimeSamples.push(elapsed);
@@ -1547,6 +1842,7 @@
     clearTimeout(aiTimeout);
     showThinking(false);
     SFX.win();
+    spawnWinEffect();
     const winnerName = winner === 'A' ? teamNameAEl.textContent : teamNameBEl.textContent;
     winTitle.textContent = winnerName + ' wins!';
     let subText = 'Solved ' + (winner === 'A' ? solvedA : solvedB) + ' problems and pulled the ribbon across.';
@@ -1554,7 +1850,9 @@
       addCoins(25);
       save.careerWins++;
       checkBadges();
+      applyNameBadge();
       subText += ' +25 🪙 bonus!';
+      maybeShowMilestoneChest();
     }
     winSub.textContent = subText;
     const continueBtn = document.getElementById('continueMatchBtn');
@@ -1582,7 +1880,7 @@
     overlay.classList.remove('show');
     gameOver = false;
     position = 0;
-    chancesLeftA = 5;
+    chancesLeftA = 3;
     pityBlocksUsed = 0;
     updateVisual();
     newRound();
@@ -1592,10 +1890,13 @@
     position = 0; gameOver = false;
     solvedA = 0; solvedB = 0;
     wrongStreakA = 0; aiHandicappedThisRound = false; helpUserNextRound = false;
-    perfectStreakCount = 0; chancesLeftA = 5; pityBlocksUsed = 0;
+    perfectStreakCount = 0; chancesLeftA = 3; pityBlocksUsed = 0;
     userTimeSamples = [];
     userCorrectCount = 0; userWrongCount = 0; totalSolved = 0;
     userRoundStreak = 0; userMissStreak = 0; hardBurstRounds = 0;
+    rollOpponentBadge();
+    applyOpponentName();
+    applyNameBadge();
 
     if(mode === 'online'){
       userGamesPlayed++;
@@ -1615,18 +1916,11 @@
   function setMode(m){
     mode = m;
     if(m === 'friend'){
-      teamNameAEl.textContent = 'Team A';
-      teamNameBEl.textContent = 'Team B';
-      padTitleAEl.textContent = 'Team A';
-      padTitleBEl.textContent = 'Team B';
       padBoxB.classList.remove('ai-mode');
     } else {
-      teamNameAEl.textContent = playerName;
-      teamNameBEl.textContent = opponentName;
-      padTitleAEl.textContent = playerName;
-      padTitleBEl.textContent = opponentName;
       padBoxB.classList.add('ai-mode');
     }
+    applyNameBadge();
     modeOverlay.classList.remove('show');
     nameOverlay.classList.remove('show');
     resetGame();
@@ -1730,9 +2024,23 @@
     }
   });
 
+  dailySpinBtnEl.addEventListener('click', spinWheel);
+
+  document.getElementById('chestOpenBtn').addEventListener('click', function(){
+    addCoins(pendingChestReward);
+    chestSubEl.textContent = 'You got ' + pendingChestReward + ' 🪙! Come back after 5 more wins for another chest.';
+    this.style.display = 'none';
+    setTimeout(function(){
+      chestOverlay.classList.remove('show');
+      document.getElementById('chestOpenBtn').style.display = 'inline-block';
+    }, 1600);
+  });
+
   updateCoinDisplay();
   applyRibbonColor();
   updateVisual();
+  refreshDailySpinBtn();
+  checkDailyLogin();
   initFirebaseAndLogin();
 })();
 </script>
