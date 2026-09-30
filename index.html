@@ -1043,7 +1043,9 @@
       lastLoginDate: d.lastLoginDate || null,
       loginStreak: d.loginStreak || 0,
       lastSpinTime: d.lastSpinTime || 0,
-      highestRankNotified: d.highestRankNotified || 0
+      highestRankNotified: d.highestRankNotified || 0,
+      rankDemotion: d.rankDemotion || 0,
+      consecutiveMatchLosses: d.consecutiveMatchLosses || 0
     };
   }
   let save = loadSave();
@@ -1105,7 +1107,9 @@
           lastLoginDate: d.lastLoginDate || null,
           loginStreak: d.loginStreak || 0,
           lastSpinTime: d.lastSpinTime || 0,
-          highestRankNotified: d.highestRankNotified || 0
+          highestRankNotified: d.highestRankNotified || 0,
+          rankDemotion: d.rankDemotion || 0,
+          consecutiveMatchLosses: d.consecutiveMatchLosses || 0
         };
         persistSave(); // keep localStorage mirror in sync too
         updateCoinDisplay();
@@ -1228,7 +1232,7 @@
   }
   function checkBadges(){
     const lvl = getLevelBadge();
-    if(lvl && lvl.min > save.highestRankNotified){
+    if(mode !== 'friend' && lvl && lvl.min > save.highestRankNotified){
       save.highestRankNotified = lvl.min;
       showBadgeToast(lvl.icon + ' Rank Up: ' + lvl.name + '!');
     }
@@ -1238,14 +1242,44 @@
     const d = new Date();
     return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
   }
-  function getLevelBadge(){
+  // True tier the player has EARNED by career wins (-1 = Rookie, 0 = Starter ... 6 = Warlord).
+  function trueTierIndex(){
     for(let i=0;i<LEVEL_BADGES.length;i++){
-      if(save.careerWins >= LEVEL_BADGES[i].min) return LEVEL_BADGES[i];
+      if(save.careerWins >= LEVEL_BADGES[i].min){
+        return LEVEL_BADGES_ASC.findIndex(function(b){ return b.min === LEVEL_BADGES[i].min; });
+      }
     }
-    return null; // no wins yet — no badge
+    return -1;
+  }
+  // Effective tier after applying any rank demotion (5 losses in a row = drop one tier).
+  // Earned wins are never erased - this only softens the CURRENT badge/difficulty.
+  function effectiveTierIndex(){
+    const t = trueTierIndex();
+    if(t < 0) return -1;
+    return Math.max(0, t - (save.rankDemotion || 0));
+  }
+  function getLevelBadge(){
+    const idx = effectiveTierIndex();
+    return idx >= 0 ? LEVEL_BADGES_ASC[idx] : null;
   }
   function getRank(){
     return getLevelBadge() || { name:'Rookie', icon:'🌱' };
+  }
+  // Starting question difficulty by rank (Online mode only): Rookie/Starter start
+  // easy, then each tier nudges the number ranges up, through Bronze/Silver/Gold,
+  // to Diamond/Elite/Warlord at the hard end.
+  const RANK_DIFFICULTY = [
+    { level:'easy',   boost:1   },  // Starter (and Rookie, before any rank)
+    { level:'easy',   boost:1.3 },  // Bronze - a bit past plain easy
+    { level:'normal', boost:1   },  // Silver
+    { level:'normal', boost:1.3 },  // Gold - a bit past plain normal
+    { level:'hard',   boost:1   },  // Diamond
+    { level:'hard',   boost:1.3 },  // Elite
+    { level:'hard',   boost:1.6 }   // Warlord - hardest
+  ];
+  function rankDifficulty(){
+    const idx = Math.max(0, effectiveTierIndex());
+    return RANK_DIFFICULTY[Math.min(idx, RANK_DIFFICULTY.length - 1)];
   }
   function nameBadgePrefix(){
     const b = NAME_BADGES.find(function(x){ return x.id === save.selectedNameBadge; });
@@ -1254,7 +1288,9 @@
   // Blue box (teamNameA) gets the player's level badge; the keypad title
   // (padTitleA) never shows it.
   function applyNameBadge(){
-    const lvl = getLevelBadge();
+    // Rank badges only matter in Online mode (rank = how you compare to other
+    // real opponents). Two friends sharing a device don't need a rank tag.
+    const lvl = (mode !== 'friend') ? getLevelBadge() : null;
     const lvlSuffix = lvl ? (' ' + lvl.icon) : '';
     const baseName = (mode === 'friend') ? 'Team A' : playerName;
     teamNameAEl.textContent = nameBadgePrefix() + baseName + lvlSuffix;
@@ -1264,6 +1300,7 @@
   // ±2 levels of the player's own rank — never shown in the keypad title.
   let opponentLevelBadge = null;
   function rollOpponentBadge(){
+    if(mode === 'friend'){ opponentLevelBadge = null; return; }
     const myLvl = getLevelBadge();
     if(!myLvl){ opponentLevelBadge = null; return; }
     const idx = LEVEL_BADGES_ASC.findIndex(function(b){ return b.min === myLvl.min; });
@@ -1438,8 +1475,9 @@
     });
 
     badgeGridEl.innerHTML = '';
-    LEVEL_BADGES_ASC.forEach(function(lv){
-      const earned = save.careerWins >= lv.min;
+    const effIdx = effectiveTierIndex();
+    LEVEL_BADGES_ASC.forEach(function(lv, idx){
+      const earned = idx <= effIdx;
       const item = document.createElement('div');
       item.className = 'badge-item' + (earned ? '' : ' locked');
       item.innerHTML = '<div class="badge-icon">' + lv.icon + '</div><div class="badge-name">' + lv.name + '</div>';
@@ -1524,10 +1562,10 @@
 
   function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 
-  function makeQuestion(level, tier){
+  function makeQuestion(level, tier, rankBoost){
     level = level || 'normal';
     tier = tier || 0;   // 0 = normal, 1 = harder (20+ solved), 2 = advanced ops unlocked (30+ solved)
-    const boost = tier >= 2 ? 1.8 : (tier >= 1 ? 1.35 : 1);
+    const boost = (tier >= 2 ? 1.8 : (tier >= 1 ? 1.35 : 1)) * (rankBoost || 1);
 
     // Once the match has gone on a while, mix in square / cube / square-root questions
     if(tier >= 2 && level !== 'easy' && Math.random() < 0.35) return makeAdvancedQuestion(level);
@@ -1592,18 +1630,21 @@
     aiHandicappedThisRound = false;
     roundStartTime = performance.now();
 
-    let levelA = 'normal', levelB = 'normal';
+    // Rank sets the BASE difficulty in Online mode (Starter=easy ... Warlord=hardest).
+    // Friend mode always stays at plain 'normal' - rank doesn't apply there.
+    const rd = (mode === 'online') ? rankDifficulty() : { level:'normal', boost:1 };
+    let levelA = rd.level, levelB = rd.level, boostA = rd.boost, boostB = rd.boost;
     if(mode === 'online' && helpUserNextRound){
-      levelA = 'easy';   // user was struggling last round — give them a breather
-      levelB = 'hard';   // AI genuinely gets a harder sum, which naturally slows it down
+      levelA = 'easy'; boostA = 1;   // user was struggling last round — give them a breather
+      levelB = 'hard'; boostB = 1;   // AI genuinely gets a harder sum, which naturally slows it down
       helpUserNextRound = false;
     } else if(mode === 'online' && hardBurstRounds > 0){
-      levelA = 'hard';   // early hot streak — challenge the user for a couple of rounds
+      levelA = 'hard'; boostA = 1;   // early hot streak — challenge the user for a couple of rounds
       hardBurstRounds--;
     }
     const tier = currentTier();
-    qA = makeQuestion(levelA, tier);
-    qB = makeQuestion(levelB, tier);
+    qA = makeQuestion(levelA, tier, boostA);
+    qB = makeQuestion(levelB, tier, boostB);
     qAEl.textContent = qA.text + ' = ?';
     qBEl.textContent = qB.text + ' = ?';
     ansAEl.textContent = ''; ansAEl.className = 'answer-box';
@@ -1849,10 +1890,27 @@
     if(winner === 'A'){
       addCoins(25);
       save.careerWins++;
+      save.consecutiveMatchLosses = 0;
       checkBadges();
       applyNameBadge();
       subText += ' +25 🪙 bonus!';
       maybeShowMilestoneChest();
+    } else if(mode === 'online'){
+      // 5 online losses in a row eases the difficulty back down one rank tier,
+      // without touching career wins/badges earned so far.
+      save.consecutiveMatchLosses = (save.consecutiveMatchLosses || 0) + 1;
+      if(save.consecutiveMatchLosses >= 5){
+        const beforeIdx = effectiveTierIndex();
+        save.consecutiveMatchLosses = 0;
+        save.rankDemotion = (save.rankDemotion || 0) + 1;
+        applyNameBadge();
+        if(effectiveTierIndex() < beforeIdx){
+          const r = getRank();
+          subText += ' Rank eased to ' + r.icon + ' ' + r.name + ' after 5 losses.';
+          showBadgeToast('⬇️ Rank Down: ' + r.icon + ' ' + r.name);
+        }
+      }
+      persistSave();
     }
     winSub.textContent = subText;
     const continueBtn = document.getElementById('continueMatchBtn');
