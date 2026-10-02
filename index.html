@@ -271,6 +271,20 @@
   }
   .q-a{ left:150px; }
   .q-b{ right:150px; }
+  /* Keypad Side setting: when the stage has .mirrored, Team A (blue) - its
+     name/rank box, question box and keypad - sits on the RIGHT instead of
+     the left, for players who type more comfortably with their right hand
+     closer to the edge they're already holding the phone with. */
+  .mirrored .hud{ flex-direction:row-reverse; }
+  .mirrored .controls{ flex-direction:row-reverse; }
+  .mirrored .q-a{ left:auto; right:150px; }
+  .mirrored .q-b{ right:auto; left:150px; }
+  .mirrored .team-a{ text-align:right; }
+  .mirrored .team-b{ text-align:left; }
+  .mirrored .team-a .pull-fill{ margin-left:auto; }
+  .mirrored .team-b .pull-fill{ margin-left:0; }
+  .mirrored .pad-a .pad-head{ flex-direction:row-reverse; }
+  .mirrored .pad-b .pad-head{ flex-direction:row; }
 
   .rope-zone{
     position:absolute;
@@ -808,6 +822,13 @@
       <div class="rewards-section-title">Rank Ladder</div>
       <div class="badge-grid" id="badgeGrid"></div>
 
+      <div class="rewards-section-title">Keypad Side</div>
+      <p style="font-size:11px;color:#5A7391;font-weight:600;margin:-4px 0 8px;text-align:left;">Choose which side your (blue) keypad, question box and name show up on.</p>
+      <div class="chance-btns" style="flex-direction:row;gap:8px;">
+        <button class="chance-btn chance-btn-ad" id="keypadLeftBtn" style="flex:1;">⬅️ Left</button>
+        <button class="chance-btn chance-btn-coins" id="keypadRightBtn" style="flex:1;">Right ➡️</button>
+      </div>
+
       <button class="rewards-close" id="rewardsCloseBtn">Close</button>
     </div>
   </div>
@@ -1045,7 +1066,8 @@
       lastSpinTime: d.lastSpinTime || 0,
       highestRankNotified: d.highestRankNotified || 0,
       rankDemotion: d.rankDemotion || 0,
-      consecutiveMatchLosses: d.consecutiveMatchLosses || 0
+      consecutiveMatchLosses: d.consecutiveMatchLosses || 0,
+      keypadSide: d.keypadSide || 'right'
     };
   }
   let save = loadSave();
@@ -1109,11 +1131,13 @@
           lastSpinTime: d.lastSpinTime || 0,
           highestRankNotified: d.highestRankNotified || 0,
           rankDemotion: d.rankDemotion || 0,
-          consecutiveMatchLosses: d.consecutiveMatchLosses || 0
+          consecutiveMatchLosses: d.consecutiveMatchLosses || 0,
+          keypadSide: d.keypadSide || 'right'
         };
         persistSave(); // keep localStorage mirror in sync too
         updateCoinDisplay();
         applyRibbonColor();
+        applyLayoutSide();
       }
     }catch(err){
       // Any failure here (no internet, function not deployed yet, etc.)
@@ -1224,6 +1248,15 @@
   function applyRibbonColor(){
     const r = RIBBONS.find(function(x){ return x.id === save.selectedRibbon; }) || RIBBONS[0];
     ribbon.style.background = r.color;
+  }
+  function applyLayoutSide(){
+    document.getElementById('stage').classList.toggle('mirrored', save.keypadSide === 'right');
+    updateVisual();
+  }
+  function setKeypadSide(side){
+    save.keypadSide = side;
+    persistSave();
+    applyLayoutSide();
   }
   function showBadgeToast(message){
     badgeToastEl.textContent = message;
@@ -1405,7 +1438,7 @@
     const reward = LOGIN_REWARDS[idx];
     setTimeout(function(){
       addCoins(reward);
-      showBadgeToast('📅 Day ' + save.loginStreak + ' Login Bonus!');
+      showBadgeToast('🎁 You got ' + reward + ' coins for opening the game today!');
     }, 900);
   }
   function maybeShowMilestoneChest(){
@@ -1440,6 +1473,8 @@
   function buildRewardsScreen(){
     const r = getRank();
     rankRowEl.textContent = r.icon + ' ' + r.name + ' · ' + save.careerWins + ' wins';
+    document.getElementById('keypadLeftBtn').style.opacity = (save.keypadSide === 'left') ? '1' : '.55';
+    document.getElementById('keypadRightBtn').style.opacity = (save.keypadSide === 'right') ? '1' : '.55';
     refreshDailySpinBtn();
     buildSelectableRow(winfxGridEl, WINFX, 'unlockedWinFx', 'selectedWinFx', null);
     buildSelectableRow(nameBadgeGridEl, NAME_BADGES, 'unlockedNameBadges', 'selectedNameBadge', applyNameBadge);
@@ -1553,7 +1588,8 @@
   }
 
   function updateVisual(){
-    ribbon.style.left = (50 + position * 7.2) + '%';
+    const dir = (save.keypadSide === 'right') ? -1 : 1;
+    ribbon.style.left = (50 + dir * position * 7.2) + '%';
     pullA.style.width = (Math.max(0, -position) / LIMIT * 100) + '%';
     pullB.style.width = (Math.max(0,  position) / LIMIT * 100) + '%';
     solvedAEl.textContent = solvedA;
@@ -2063,6 +2099,14 @@
   document.getElementById('rewardsCloseBtn').addEventListener('click', function(){
     rewardsOverlay.classList.remove('show');
   });
+  document.getElementById('keypadLeftBtn').addEventListener('click', function(){
+    setKeypadSide('left');
+    buildRewardsScreen();
+  });
+  document.getElementById('keypadRightBtn').addEventListener('click', function(){
+    setKeypadSide('right');
+    buildRewardsScreen();
+  });
   document.getElementById('rewardsWatchAdBtn').addEventListener('click', function(){
     watchAdForCoins(function(){ buildRewardsScreen(); });
   });
@@ -2096,6 +2140,7 @@
 
   updateCoinDisplay();
   applyRibbonColor();
+  applyLayoutSide();
   updateVisual();
   refreshDailySpinBtn();
   checkDailyLogin();
