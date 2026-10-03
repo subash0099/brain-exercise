@@ -40,295 +40,613 @@
     font-family:'Quicksand',system-ui,sans-serif;
     color:var(--ink);
   }
-  .viewport{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;}
+
+  /* The game lives on ONE fixed canvas (900 x 560).
+     JS scales that whole canvas to fit the screen it opens on,
+     so phone / tablet / laptop all see identical proportions. */
+  .viewport{
+    position:fixed; inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
   .stage{
-    position:relative; width:900px; height:560px; flex:0 0 auto;
+    position:relative;
+    width:900px;
+    height:560px;
+    flex:0 0 auto;
     transform-origin:center center;
-    display:flex; flex-direction:column;
-    border-radius:18px; overflow:hidden;
-    background:linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 33%, var(--sand) 33%, var(--sand-dark) 63%, var(--grass) 63%, var(--grass-dark) 100%);
+    display:flex;
+    flex-direction:column;
+    border-radius:18px;
+    overflow:hidden;
+    background:linear-gradient(180deg,
+      var(--sky-1) 0%, var(--sky-2) 33%,
+      var(--sand) 33%, var(--sand-dark) 63%,
+      var(--grass) 63%, var(--grass-dark) 100%);
     box-shadow:0 10px 40px rgba(0,0,0,.45);
   }
-  .hud{flex:0 0 96px; display:flex; align-items:flex-start; gap:12px; padding:10px 14px 0;}
-  .team-card{flex:1 1 0; min-width:0; border-radius:16px; padding:9px 16px 10px; color:#fff; box-shadow:0 4px 0 rgba(0,0,0,.28);}
-  .team-a{background:linear-gradient(180deg,var(--blue-soft),var(--blue));}
-  .team-b{background:linear-gradient(180deg,#E85C5C,var(--red)); text-align:right;}
-  .team-name{font-family:'Fredoka',cursive; font-weight:800; font-size:21px; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .team-score{font-size:14px; font-weight:700; opacity:.95; line-height:1.3;}
-  .pull-bar{height:9px; border-radius:99px; background:rgba(0,0,0,.3); overflow:hidden; margin-top:5px;}
-  .pull-fill{height:100%; width:0%; border-radius:99px; transition:width .45s ease;}
-  .team-a .pull-fill{background:linear-gradient(90deg,#8FE86B,#4FCB2F);}
-  .team-b .pull-fill{background:linear-gradient(90deg,#FF8B6B,#FF5A3C); margin-left:auto;}
-  .timer-pod{flex:0 0 150px; background:linear-gradient(180deg,#2C5A9E,var(--navy)); border-radius:16px; padding:7px 14px 8px; text-align:center; color:#fff; box-shadow:0 4px 0 rgba(0,0,0,.3);}
-  .timer-time{font-family:'Fredoka',cursive; font-weight:800; font-size:26px; line-height:1;}
-  .timer-label{font-size:11px; opacity:.85; font-weight:700; margin-top:1px;}
-  .coin-strip{flex:0 0 64px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:6px; padding-top:6px;}
-  .coin-display{background:linear-gradient(180deg,#2C5A9E,var(--navy)); color:var(--gold); font-family:'Fredoka',cursive; font-weight:800; font-size:14px; padding:5px 10px; border-radius:99px; box-shadow:0 3px 0 rgba(0,0,0,.3); white-space:nowrap;}
-  .reward-chip-btn{font-size:20px; line-height:1; padding:5px 10px; border-radius:99px; border:2px solid rgba(255,255,255,.5); background:linear-gradient(180deg,var(--gold),var(--gold-dark)); cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.3);}
-  .reward-chip-btn:active{transform:translateY(2px); box-shadow:none;}
-  .coin-toast{position:absolute; left:50%; top:40%; transform:translate(-50%,0); font-family:'Fredoka',cursive; font-weight:800; font-size:20px; color:var(--gold); text-shadow:0 2px 3px rgba(0,0,0,.5); pointer-events:none; z-index:55; opacity:0;}
-  .coin-toast.fly{animation:coinFly 1.1s ease forwards;}
-  @keyframes coinFly{0%{opacity:0; transform:translate(-50%,10px) scale(.8);} 20%{opacity:1; transform:translate(-50%,-10px) scale(1.1);} 75%{opacity:1; transform:translate(-50%,-46px) scale(1);} 100%{opacity:0; transform:translate(-50%,-62px) scale(1);}}
-  .badge-toast{position:absolute; left:50%; top:14px; transform:translate(-50%,-70px); background:linear-gradient(180deg,var(--gold),var(--gold-dark)); color:var(--navy); font-family:'Fredoka',cursive; font-weight:800; font-size:14px; padding:9px 20px; border-radius:99px; box-shadow:0 4px 0 rgba(0,0,0,.3); z-index:70; white-space:nowrap; transition:transform .4s cubic-bezier(.34,1.4,.64,1);}
-  .badge-toast.show{transform:translate(-50%,0);}
-  .timer-track{height:5px; border-radius:99px; background:rgba(0,0,0,.35); margin-top:5px; overflow:hidden;}
-  .timer-fill{height:100%; width:100%; background:var(--gold); transition:width .1s linear;}
-  .mini-btn-row{display:flex; flex-wrap:wrap; gap:5px; row-gap:4px; justify-content:center; margin-top:6px;}
-  .restart-mini{display:block; margin:0; font-family:'Quicksand',sans-serif; font-size:11px; font-weight:800; padding:3px 12px; border-radius:99px; border:2px solid rgba(255,255,255,.55); background:rgba(255,255,255,.14); color:#fff; cursor:pointer; white-space:nowrap;}
-  .restart-mini:active{transform:translateY(1px);}
-  #muteBtn{padding:3px 10px;}
-  #muteBtn.muted{opacity:.55;}
-  .arena{position:relative; flex:1 1 auto; min-height:0;}
-  .q-card{position:absolute; top:0px; background:#fff; border:4px solid var(--blue); border-radius:16px; padding:6px 22px 9px; text-align:center; box-shadow:0 5px 0 rgba(0,0,0,.2); min-width:180px; z-index:5;}
-  .q-card.q-b{border-color:var(--red);}
-  .q-label{font-size:12px; font-weight:700; color:#5A7391; line-height:1.2;}
-  .q-text{font-family:'Fredoka',cursive; font-weight:800; font-size:30px; line-height:1.15; color:var(--navy); white-space:nowrap;}
-  .q-a{left:150px;}
-  .q-b{right:150px;}
-  .mirrored .hud{flex-direction:row-reverse;}
-  .mirrored .controls{flex-direction:row-reverse;}
-  .mirrored .q-a{left:auto; right:150px;}
-  .mirrored .q-b{right:auto; left:150px;}
-  .mirrored .team-a{text-align:right;}
-  .mirrored .team-b{text-align:left;}
-  .mirrored .team-a .pull-fill{margin-left:auto;}
-  .mirrored .team-b .pull-fill{margin-left:0;}
-  .mirrored .pad-a .pad-head{flex-direction:row-reverse;}
-  .mirrored .pad-b .pad-head{flex-direction:row;}
 
-  /* ---- ROPE ZONE ---- */
-  .rope-zone{position:absolute; left:0; right:0; bottom:44px; height:0;}
-  .rope{position:absolute; left:60px; right:60px; top:0; height:11px; transform:translateY(-50%); background:repeating-linear-gradient(72deg,#C79A5E 0 6px,#A87A42 6px 12px); border-radius:99px; box-shadow:inset 0 -2px 3px rgba(0,0,0,.28);}
-  .ribbon{position:absolute; top:0; width:26px; height:30px; transform:translate(-50%,-52%); transition:left .5s cubic-bezier(.34,1.4,.64,1); z-index:6; background:var(--red); clip-path:polygon(50% 0,100% 18%,72% 55%,100% 100%,50% 62%,0 100%,28% 55%,0 18%); filter:drop-shadow(0 3px 2px rgba(0,0,0,.35));}
+  /* ---------- TOP HUD ---------- */
+  .hud{
+    flex:0 0 96px;
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    padding:10px 14px 0;
+  }
+  .team-card{
+    flex:1 1 0;
+    min-width:0;
+    border-radius:16px;
+    padding:9px 16px 10px;
+    color:#fff;
+    box-shadow:0 4px 0 rgba(0,0,0,.28);
+  }
+  .team-a{ background:linear-gradient(180deg,var(--blue-soft),var(--blue)); }
+  .team-b{ background:linear-gradient(180deg,#E85C5C,var(--red)); text-align:right; }
+  .team-name{
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:21px;
+    line-height:1.15;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .team-score{
+    font-size:14px;
+    font-weight:700;
+    opacity:.95;
+    line-height:1.3;
+  }
+  .pull-bar{
+    height:9px;
+    border-radius:99px;
+    background:rgba(0,0,0,.3);
+    overflow:hidden;
+    margin-top:5px;
+  }
+  .pull-fill{
+    height:100%;
+    width:0%;
+    border-radius:99px;
+    transition:width .45s ease;
+  }
+  .team-a .pull-fill{ background:linear-gradient(90deg,#8FE86B,#4FCB2F); }
+  .team-b .pull-fill{ background:linear-gradient(90deg,#FF8B6B,#FF5A3C); margin-left:auto; }
 
-  /* ===== 3D CHARACTERS ===== */
-  .char{
+  .timer-pod{
+    flex:0 0 150px;
+    background:linear-gradient(180deg,#2C5A9E,var(--navy));
+    border-radius:16px;
+    padding:7px 14px 8px;
+    text-align:center;
+    color:#fff;
+    box-shadow:0 4px 0 rgba(0,0,0,.3);
+  }
+  .timer-time{
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:26px;
+    line-height:1;
+  }
+  .timer-label{ font-size:11px; opacity:.85; font-weight:700; margin-top:1px; }
+  .coin-strip{
+    flex:0 0 64px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    gap:6px;
+    padding-top:6px;
+  }
+  .coin-display{
+    background:linear-gradient(180deg,#2C5A9E,var(--navy));
+    color:var(--gold);
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:14px;
+    padding:5px 10px;
+    border-radius:99px;
+    box-shadow:0 3px 0 rgba(0,0,0,.3);
+    white-space:nowrap;
+  }
+  .reward-chip-btn{
+    font-size:20px;
+    line-height:1;
+    padding:5px 10px;
+    border-radius:99px;
+    border:2px solid rgba(255,255,255,.5);
+    background:linear-gradient(180deg,var(--gold),var(--gold-dark));
+    cursor:pointer;
+    box-shadow:0 3px 0 rgba(0,0,0,.3);
+  }
+  .reward-chip-btn:active{ transform:translateY(2px); box-shadow:none; }
+  .coin-toast{
     position:absolute;
-    bottom:-2px;
-    width:96px;
-    height:126px;
-    z-index:3;
-    transform-origin:50% 100%;
-    will-change:transform;
-    transition:margin .5s cubic-bezier(.34,1.4,.64,1);
+    left:50%;
+    top:40%;
+    transform:translate(-50%,0);
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:20px;
+    color:var(--gold);
+    text-shadow:0 2px 3px rgba(0,0,0,.5);
+    pointer-events:none;
+    z-index:55;
+    opacity:0;
   }
-  .char-a{left:26px;}
-  .char-b{right:26px;}
+  .coin-toast.fly{ animation:coinFly 1.1s ease forwards; }
+  @keyframes coinFly{
+    0%{ opacity:0; transform:translate(-50%,10px) scale(.8); }
+    20%{ opacity:1; transform:translate(-50%,-10px) scale(1.1); }
+    75%{ opacity:1; transform:translate(-50%,-46px) scale(1); }
+    100%{ opacity:0; transform:translate(-50%,-62px) scale(1); }
+  }
+  .badge-toast{
+    position:absolute;
+    left:50%; top:14px;
+    transform:translate(-50%,-70px);
+    background:linear-gradient(180deg,var(--gold),var(--gold-dark));
+    color:var(--navy);
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:14px;
+    padding:9px 20px;
+    border-radius:99px;
+    box-shadow:0 4px 0 rgba(0,0,0,.3);
+    z-index:70;
+    white-space:nowrap;
+    transition:transform .4s cubic-bezier(.34,1.4,.64,1);
+  }
+  .badge-toast.show{ transform:translate(-50%,0); }
+  .timer-track{
+    height:5px;
+    border-radius:99px;
+    background:rgba(0,0,0,.35);
+    margin-top:5px;
+    overflow:hidden;
+  }
+  .timer-fill{
+    height:100%;
+    width:100%;
+    background:var(--gold);
+    transition:width .1s linear;
+  }
+  .mini-btn-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    row-gap:4px;
+    justify-content:center;
+    margin-top:6px;
+  }
+  .restart-mini{
+    display:block;
+    margin:0;
+    font-family:'Quicksand',sans-serif;
+    font-size:11px;
+    font-weight:800;
+    padding:3px 12px;
+    border-radius:99px;
+    border:2px solid rgba(255,255,255,.55);
+    background:rgba(255,255,255,.14);
+    color:#fff;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .restart-mini:active{ transform:translateY(1px); }
+  #muteBtn{ padding:3px 10px; }
+  #muteBtn.muted{ opacity:.55; }
 
-  .char .char-shadow{
-    position:absolute; left:50%; bottom:-4px;
-    width:72px; height:14px; margin-left:-36px;
-    background:radial-gradient(ellipse at center, rgba(0,0,0,.4) 0%, rgba(0,0,0,0) 72%);
-    border-radius:50%; z-index:0;
+  /* ---------- ARENA ---------- */
+  .arena{
+    position:relative;
+    flex:1 1 auto;
+    min-height:0;
   }
-  .char .head{
-    position:absolute; left:50%; top:0;
-    width:46px; height:46px; margin-left:-23px;
+
+  .q-card{
+    position:absolute;
+    top:0px;
+    background:#fff;
+    border:4px solid var(--blue);
+    border-radius:16px;
+    padding:6px 22px 9px;
+    text-align:center;
+    box-shadow:0 5px 0 rgba(0,0,0,.2);
+    min-width:180px;
+    z-index:5;
+  }
+  .q-card.q-b{ border-color:var(--red); }
+  .q-label{ font-size:12px; font-weight:700; color:#5A7391; line-height:1.2; }
+  .q-text{
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:30px;
+    line-height:1.15;
+    color:var(--navy);
+    white-space:nowrap;
+  }
+  .q-a{ left:150px; }
+  .q-b{ right:150px; }
+  /* Keypad Side setting: when the stage has .mirrored, Team A (blue) - its
+     name/rank box, question box and keypad - sits on the RIGHT instead of
+     the left, for players who type more comfortably with their right hand
+     closer to the edge they're already holding the phone with. */
+  .mirrored .hud{ flex-direction:row-reverse; }
+  .mirrored .controls{ flex-direction:row-reverse; }
+  .mirrored .q-a{ left:auto; right:150px; }
+  .mirrored .q-b{ right:auto; left:150px; }
+  .mirrored .team-a{ text-align:right; }
+  .mirrored .team-b{ text-align:left; }
+  .mirrored .team-a .pull-fill{ margin-left:auto; }
+  .mirrored .team-b .pull-fill{ margin-left:0; }
+  .mirrored .pad-a .pad-head{ flex-direction:row-reverse; }
+  .mirrored .pad-b .pad-head{ flex-direction:row; }
+
+  .rope-zone{
+    position:absolute;
+    left:0; right:0;
+    bottom:34px;
+    height:0;
+  }
+  .rope{
+    position:absolute;
+    left:60px; right:60px;
+    top:0;
+    height:11px;
+    transform:translateY(-50%);
+    background:repeating-linear-gradient(72deg,#C79A5E 0 6px,#A87A42 6px 12px);
+    border-radius:99px;
+    box-shadow:inset 0 -2px 3px rgba(0,0,0,.28);
+  }
+  .ribbon{
+    position:absolute;
+    top:0;
+    width:26px; height:30px;
+    transform:translate(-50%,-52%);
+    transition:left .5s cubic-bezier(.34,1.4,.64,1);
+    z-index:4;
+    background:var(--red);
+    clip-path:polygon(50% 0,100% 18%,72% 55%,100% 100%,50% 62%,0 100%,28% 55%,0 18%);
+    filter:drop-shadow(0 3px 2px rgba(0,0,0,.35));
+  }
+
+  /* ---------- CONTROLS (bigger now that character space is freed up) ---------- */
+  .controls{
+    flex:0 0 270px;
+    display:flex;
+    gap:16px;
+    padding:8px 16px 14px;
+    background:linear-gradient(180deg,rgba(12,39,72,0) 0%, var(--navy-deep) 16%);
+  }
+  .pad-box{
+    flex:1 1 0;
+    min-width:0;
+    background:linear-gradient(180deg,#F4F8FE,#DCE8F7);
+    border:4px solid var(--blue);
+    border-radius:18px;
+    padding:8px 10px 10px;
+    box-shadow:0 5px 0 rgba(0,0,0,.3);
+  }
+  .pad-b{ border-color:var(--red); }
+  .pad-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:7px;
+  }
+  .pad-b .pad-head{ flex-direction:row-reverse; }
+  .pad-title{
+    font-size:14px;
+    font-weight:800;
+    color:var(--navy);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:120px;
+  }
+  .pad-stage{ position:relative; }
+  .ai-think{
+    position:absolute; inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    text-align:center;
+    background:rgba(255,255,255,.95);
+    border-radius:14px;
+    font-family:'Fredoka',cursive;
+    font-weight:700;
+    font-size:14px;
+    color:var(--navy);
+    z-index:3;
+    padding:6px;
+  }
+  .ai-think.show{ display:flex; }
+  .ai-think .dots::after{
+    content:'.';
+    animation:dots 1.2s steps(4,end) infinite;
+  }
+  @keyframes dots{
+    0%{content:'.';} 33%{content:'..';} 66%{content:'...';} 100%{content:'.';}
+  }
+  .answer-box{
+    flex:1 1 auto;
+    min-width:0;
+    background:#fff;
+    border:3px solid #B9CEE6;
+    border-radius:12px;
+    height:46px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Fredoka',cursive;
+    font-weight:700;
+    font-size:28px;
+    color:var(--navy);
+    letter-spacing:1px;
+  }
+  .answer-box.ok{ border-color:var(--green-ok); color:var(--green-ok); background:#EDFBF1; }
+  .answer-box.bad{ border-color:var(--red); color:var(--red); background:#FDEDED; animation:shake .3s; }
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    30%{transform:translateX(-7px);}
+    70%{transform:translateX(7px);}
+  }
+  .keypad{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:9px;
+  }
+  .key{
+    font-family:'Fredoka',cursive;
+    font-weight:700;
+    font-size:28px;
+    color:var(--navy);
+    background:#fff;
+    border:3px solid #C3D6EC;
+    border-radius:13px;
+    height:46px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    user-select:none;
+    touch-action:manipulation;
+    box-shadow:0 3px 0 #B0C6DF;
+  }
+  .key:active{ transform:translateY(3px); box-shadow:none; }
+  .key.back{ background:var(--navy); color:#fff; border-color:#071A31; box-shadow:0 3px 0 #071A31; font-size:22px; }
+  .key.go{ background:var(--green-ok); color:#fff; border-color:#2C8247; box-shadow:0 3px 0 #24693A; font-size:22px; }
+
+  .pad-box.flash{ animation:pop .5s ease; }
+  @keyframes pop{
+    0%{transform:scale(1);}
+    35%{transform:scale(1.03);}
+    100%{transform:scale(1);}
+  }
+
+  /* ---------- WIN OVERLAY ---------- */
+  .overlay{
+    position:absolute; inset:0;
+    background:rgba(8,24,45,.74);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:60;
+  }
+  .overlay.show{ display:flex; }
+  .win-card{
+    background:linear-gradient(180deg,#F7FBFF,#DCE9F8);
+    border:5px solid var(--gold);
+    border-radius:22px;
+    padding:24px 40px 26px;
+    text-align:center;
+    max-width:440px;
+    box-shadow:0 10px 0 rgba(0,0,0,.35);
+  }
+  .win-trophy{ font-size:58px; line-height:1; }
+  .mystery-box-icon{ cursor:pointer; animation:boxPulse 1.2s ease-in-out infinite; }
+  @keyframes boxPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.1); } }
+  .win-card h2{
+    font-family:'Fredoka',cursive;
+    font-size:30px;
+    margin:8px 0 4px;
+    color:var(--navy);
+  }
+  .win-card p{ margin:0 0 16px; font-size:15px; color:#4C6A8C; font-weight:600; }
+  .play-again{
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:19px;
+    padding:11px 32px;
+    border-radius:99px;
+    border:4px solid var(--gold-dark);
+    background:var(--gold);
+    color:var(--navy);
+    cursor:pointer;
+    box-shadow:0 5px 0 var(--gold-dark);
+  }
+  .play-again:active{ transform:translateY(4px); box-shadow:none; }
+  .post-game-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:4px;
+  }
+  .play-again-icon{
+    font-size:22px;
+    line-height:1;
+    padding:11px 14px;
+    border-radius:99px;
+    border:4px solid var(--gold-dark);
+    background:var(--gold);
+    color:var(--navy);
+    cursor:pointer;
+    box-shadow:0 5px 0 var(--gold-dark);
+    flex:0 0 auto;
+  }
+  .play-again-icon:active{ transform:translateY(4px); box-shadow:none; }
+  .continue-match-btn{
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:16px;
+    padding:11px 20px;
+    border-radius:99px;
+    border:4px solid var(--blue);
+    background:linear-gradient(180deg,var(--blue-soft),var(--blue));
+    color:#fff;
+    cursor:pointer;
+    box-shadow:0 5px 0 var(--navy);
+    flex:1 1 auto;
+  }
+  .continue-match-btn:active{ transform:translateY(4px); box-shadow:none; }
+  .share-btn{
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:14px;
+    padding:11px 16px;
+    border-radius:99px;
+    border:3px solid var(--navy);
+    background:linear-gradient(180deg,#6FB23F,var(--grass-dark));
+    color:#fff;
+    cursor:pointer;
+    box-shadow:0 4px 0 var(--navy);
+    flex:1 1 auto;
+    white-space:nowrap;
+  }
+  .share-btn:active{ transform:translateY(3px); box-shadow:none; }
+
+  /* ---------- MODE / NAME OVERLAYS ---------- */
+  .mode-card{ padding:22px 34px 26px; }
+  .mode-btns{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin-top:6px;
+  }
+  .mode-btn{
+    font-family:'Fredoka',cursive;
+    font-weight:800;
+    font-size:18px;
+    padding:13px 20px;
+    border-radius:16px;
+    border:none;
+    cursor:pointer;
+    color:#fff;
+    box-shadow:0 5px 0 rgba(0,0,0,.25);
+  }
+  .mode-btn:active{ transform:translateY(4px); box-shadow:none; }
+  .mode-btn-a{ background:linear-gradient(180deg,var(--blue-soft),var(--blue)); }
+  .mode-btn-b{ background:linear-gradient(180deg,#E85C5C,var(--red)); }
+  .mode-sub{ font-size:12px; opacity:.85; font-weight:600; margin-top:2px; }
+  .name-input{
+    width:100%;
+    font-family:'Quicksand',sans-serif;
+    font-weight:700;
+    font-size:17px;
+    text-align:center;
+    padding:11px 14px;
+    border-radius:12px;
+    border:3px solid #B9CEE6;
+    color:var(--navy);
+    margin:4px 0 16px;
+    outline:none;
+  }
+  .name-input:focus{ border-color:var(--blue); }
+  .search-spinner{
+    width:52px; height:52px;
+    margin:4px auto 12px;
+    border:6px solid #DCE9F8;
+    border-top-color:var(--blue);
     border-radius:50%;
-    background:linear-gradient(160deg,#FFE0B8,#F0B67F);
-    box-shadow:inset -5px -6px 10px rgba(0,0,0,.18), inset 4px 5px 8px rgba(255,255,255,.55), 0 4px 8px rgba(0,0,0,.28);
-    z-index:4;
+    animation:spin 0.85s linear infinite;
   }
-  .char .head::before{
-    content:''; position:absolute; left:-3px; top:-5px;
-    width:52px; height:32px; border-radius:50% 50% 42% 42%;
-    background:linear-gradient(160deg,#3B2B22,#1E1611);
-    box-shadow:0 3px 5px rgba(0,0,0,.3);
-  }
-  .char-b .head::before{background:linear-gradient(160deg,#5A2E1E,#2A1508);}
-  .char .eye{position:absolute; top:22px; width:6px; height:8px; border-radius:50%; background:#1a1a1a; z-index:6; box-shadow:0 1px 1px rgba(0,0,0,.3);}
-  .char .eye.l{left:11px;}
-  .char .eye.r{right:11px;}
-  .char .eye::after{content:''; position:absolute; top:1px; left:1px; width:2px; height:3px; border-radius:50%; background:#fff;}
-  .char .mouth{position:absolute; left:50%; top:36px; width:14px; height:7px; margin-left:-7px; border-radius:0 0 14px 14px; background:#B5462F; z-index:6;}
-  .char .cheek{position:absolute; top:30px; width:9px; height:5px; border-radius:50%; background:radial-gradient(#FF9A9A, rgba(255,154,154,0)); z-index:5;}
-  .char .cheek.l{left:4px;}
-  .char .cheek.r{right:4px;}
-  .char .torso{
-    position:absolute; left:50%; top:42px;
-    width:56px; height:60px; margin-left:-28px;
-    border-radius:16px 16px 12px 12px;
-    background:linear-gradient(160deg,var(--blue-soft),var(--blue));
-    box-shadow:inset -6px -8px 12px rgba(0,0,0,.25), inset 5px 6px 10px rgba(255,255,255,.35), 0 5px 10px rgba(0,0,0,.28);
-    z-index:3;
-  }
-  .char-b .torso{background:linear-gradient(160deg,#E85C5C,var(--red));}
-  .char .torso::after{
-    content:'1'; position:absolute; left:50%; top:52%;
-    transform:translate(-50%,-50%);
-    font-family:'Fredoka',cursive; font-weight:800; font-size:22px;
-    color:rgba(255,255,255,.9); text-shadow:0 2px 3px rgba(0,0,0,.35);
-  }
-  .char-b .torso::after{content:'2';}
-  .char .arm-front{
-    position:absolute; top:52px; right:22px;
-    width:14px; height:42px; border-radius:9px;
-    background:linear-gradient(160deg,#FFD8AF,#EBB27E);
-    box-shadow:inset -3px -4px 6px rgba(0,0,0,.2);
-    z-index:5; transform-origin:top center; transform:rotate(35deg);
-  }
-  .char .arm-back{
-    position:absolute; top:52px; left:20px;
-    width:14px; height:42px; border-radius:9px;
-    background:linear-gradient(160deg,#F0C79C,#D9A06C);
-    box-shadow:inset -3px -4px 6px rgba(0,0,0,.25);
-    z-index:2; transform-origin:top center; transform:rotate(-35deg);
-  }
-  .char .leg{
-    position:absolute; bottom:4px;
-    width:18px; height:28px; border-radius:8px;
-    background:linear-gradient(180deg,#2E3A5C,#1B2540);
-    box-shadow:inset -3px -3px 5px rgba(0,0,0,.4);
-    z-index:2;
-  }
-  .char .leg.l{left:28px; transform:rotate(6deg);}
-  .char .leg.r{right:28px; transform:rotate(-6deg);}
-  .char .foot{
-    position:absolute; bottom:0;
-    width:24px; height:12px; border-radius:6px 8px 4px 4px;
-    background:linear-gradient(180deg,#3E3E3E,#161616);
-    box-shadow:inset -2px -2px 3px rgba(0,0,0,.5);
-    z-index:4;
-  }
-  .char .foot.l{left:24px; transform:rotate(6deg);}
-  .char .foot.r{right:24px; transform:rotate(-6deg);}
-  .char .grip{
-    position:absolute; top:72px; right:0;
-    width:14px; height:14px; border-radius:50%;
-    background:radial-gradient(circle at 35% 30%, #FFE6C4, #EBB27E);
-    box-shadow:0 0 0 2px rgba(0,0,0,.12), 0 2px 4px rgba(0,0,0,.3);
-    z-index:6;
-  }
-  .char-b .grip{left:0; right:auto;}
+  @keyframes spin{ to{ transform:rotate(360deg); } }
 
-  /* idle breathing */
-  @keyframes char-idle{0%,100%{transform:translateY(0);} 50%{transform:translateY(-2px);}}
-  .char-a.play-idle{animation:char-idle 1.8s ease-in-out infinite;}
-  .char-b.play-idle{animation:char-idle 1.8s ease-in-out infinite; animation-delay:.3s;}
-
-  /* Pull animation — A leans back (to left), B leans back (to right visually) */
-  @keyframes char-pull-A{
-    0%{transform:translateX(0) rotate(0);}
-    35%{transform:translateX(-14px) rotate(-14deg) translateY(-2px);}
-    70%{transform:translateX(-6px) rotate(-6deg);}
-    100%{transform:translateX(0) rotate(0);}
+  /* ---------- REWARDS SCREEN ---------- */
+  .rewards-card{ padding:18px 22px 20px; max-width:520px; max-height:500px; overflow-y:auto; }
+  .rewards-coin-row{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    font-family:'Fredoka',cursive; font-weight:800; font-size:20px; color:var(--gold-dark);
+    margin-bottom:10px;
   }
-  @keyframes char-pull-B{
-    0%{transform:scaleX(-1) translateX(0) rotate(0);}
-    35%{transform:scaleX(-1) translateX(-14px) rotate(-14deg) translateY(-2px);}
-    70%{transform:scaleX(-1) translateX(-6px) rotate(-6deg);}
-    100%{transform:scaleX(-1) translateX(0) rotate(0);}
+  .rewards-section-title{
+    font-size:13px; font-weight:800; color:var(--navy); text-align:left;
+    margin:12px 0 8px; text-transform:uppercase; letter-spacing:.5px;
   }
-  .char-a.pulling{animation:char-pull-A .62s ease-out;}
-  .char-b.pulling{animation:char-pull-B .62s ease-out;}
-
-  /* Win celebration */
-  @keyframes char-win-A{
-    0%{transform:translateY(0) rotate(0);}
-    30%{transform:translateY(-18px) rotate(-8deg);}
-    60%{transform:translateY(-6px) rotate(6deg);}
-    100%{transform:translateY(0) rotate(0);}
+  .ribbon-grid{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .ribbon-item{
+    width:110px;
+    border:3px solid #C3D6EC;
+    border-radius:14px;
+    padding:10px 6px 8px;
+    background:#fff;
+    cursor:pointer;
   }
-  @keyframes char-win-B{
-    0%{transform:scaleX(-1) translateY(0) rotate(0);}
-    30%{transform:scaleX(-1) translateY(-18px) rotate(-8deg);}
-    60%{transform:scaleX(-1) translateY(-6px) rotate(6deg);}
-    100%{transform:scaleX(-1) translateY(0) rotate(0);}
+  .ribbon-item.selected{ border-color:var(--green-ok); background:#EDFBF1; }
+  .ribbon-item.locked{ opacity:.6; cursor:pointer; }
+  .ribbon-swatch{
+    width:30px; height:34px;
+    margin:0 auto 6px;
+    clip-path:polygon(50% 0,100% 18%,72% 55%,100% 100%,50% 62%,0 100%,28% 55%,0 18%);
   }
-  .char-a.celebrating{animation:char-win-A 1.1s ease-in-out infinite;}
-  .char-b.celebrating{animation:char-win-B 1.1s ease-in-out infinite;}
+  .ribbon-name{ font-size:12px; font-weight:800; color:var(--navy); }
+  .ribbon-cost{ font-size:11px; font-weight:700; color:var(--gold-dark); margin-top:2px; }
+  .ribbon-tag{ font-size:11px; font-weight:700; color:var(--green-ok); margin-top:2px; }
 
-  /* Lose slump */
-  @keyframes char-lose-A{0%{transform:translateX(0) rotate(0);} 100%{transform:translateX(6px) rotate(10deg) translateY(4px);}}
-  @keyframes char-lose-B{0%{transform:scaleX(-1) translateX(0) rotate(0);} 100%{transform:scaleX(-1) translateX(6px) rotate(10deg) translateY(4px);}}
-  .char-a.losing{animation:char-lose-A .55s ease-out forwards;}
-  .char-b.losing{animation:char-lose-B .55s ease-out forwards;}
+  .badge-grid{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .badge-item{
+    width:96px;
+    border:3px solid #C3D6EC;
+    border-radius:14px;
+    padding:10px 4px 8px;
+    background:#fff;
+    text-align:center;
+  }
+  .badge-item.locked{ opacity:.45; filter:grayscale(1); }
+  .badge-icon{ font-size:26px; }
+  .badge-name{ font-size:11px; font-weight:800; color:var(--navy); margin-top:3px; line-height:1.2; }
 
-  /* ---------- CONTROLS ---------- */
-  .controls{flex:0 0 270px; display:flex; gap:16px; padding:8px 16px 14px; background:linear-gradient(180deg,rgba(12,39,72,0) 0%, var(--navy-deep) 16%);}
-  .pad-box{flex:1 1 0; min-width:0; background:linear-gradient(180deg,#F4F8FE,#DCE8F7); border:4px solid var(--blue); border-radius:18px; padding:8px 10px 10px; box-shadow:0 5px 0 rgba(0,0,0,.3);}
-  .pad-b{border-color:var(--red);}
-  .pad-head{display:flex; align-items:center; gap:10px; margin-bottom:7px;}
-  .pad-b .pad-head{flex-direction:row-reverse;}
-  .pad-title{font-size:14px; font-weight:800; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px;}
-  .pad-stage{position:relative;}
-  .ai-think{position:absolute; inset:0; display:none; align-items:center; justify-content:center; gap:6px; text-align:center; background:rgba(255,255,255,.95); border-radius:14px; font-family:'Fredoka',cursive; font-weight:700; font-size:14px; color:var(--navy); z-index:3; padding:6px;}
-  .ai-think.show{display:flex;}
-  .ai-think .dots::after{content:'.'; animation:dots 1.2s steps(4,end) infinite;}
-  @keyframes dots{0%{content:'.';} 33%{content:'..';} 66%{content:'...';} 100%{content:'.';}}
-  .answer-box{flex:1 1 auto; min-width:0; background:#fff; border:3px solid #B9CEE6; border-radius:12px; height:46px; display:flex; align-items:center; justify-content:center; font-family:'Fredoka',cursive; font-weight:700; font-size:28px; color:var(--navy); letter-spacing:1px;}
-  .answer-box.ok{border-color:var(--green-ok); color:var(--green-ok); background:#EDFBF1;}
-  .answer-box.bad{border-color:var(--red); color:var(--red); background:#FDEDED; animation:shake .3s;}
-  @keyframes shake{0%,100%{transform:translateX(0);} 30%{transform:translateX(-7px);} 70%{transform:translateX(7px);}}
-  .keypad{display:grid; grid-template-columns:repeat(3,1fr); gap:9px;}
-  .key{font-family:'Fredoka',cursive; font-weight:700; font-size:28px; color:var(--navy); background:#fff; border:3px solid #C3D6EC; border-radius:13px; height:46px; display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none; touch-action:manipulation; box-shadow:0 3px 0 #B0C6DF;}
-  .key:active{transform:translateY(3px); box-shadow:none;}
-  .key.back{background:var(--navy); color:#fff; border-color:#071A31; box-shadow:0 3px 0 #071A31; font-size:22px;}
-  .key.go{background:var(--green-ok); color:#fff; border-color:#2C8247; box-shadow:0 3px 0 #24693A; font-size:22px;}
-  .pad-box.flash{animation:pop .5s ease;}
-  @keyframes pop{0%{transform:scale(1);} 35%{transform:scale(1.03);} 100%{transform:scale(1);}}
+  .rewards-close{
+    display:block; margin:16px auto 0;
+    font-family:'Fredoka',cursive; font-weight:800; font-size:16px;
+    padding:9px 26px; border-radius:99px; border:3px solid var(--navy);
+    background:var(--navy); color:#fff; cursor:pointer;
+  }
 
-  /* ---------- OVERLAYS ---------- */
-  .overlay{position:absolute; inset:0; background:rgba(8,24,45,.74); display:none; align-items:center; justify-content:center; z-index:60;}
-  .overlay.show{display:flex;}
-  .win-card{background:linear-gradient(180deg,#F7FBFF,#DCE9F8); border:5px solid var(--gold); border-radius:22px; padding:24px 40px 26px; text-align:center; max-width:440px; box-shadow:0 10px 0 rgba(0,0,0,.35);}
-  .win-trophy{font-size:58px; line-height:1;}
-  .win-card h2{font-family:'Fredoka',cursive; font-size:30px; margin:8px 0 4px; color:var(--navy);}
-  .win-card p{margin:0 0 16px; font-size:15px; color:#4C6A8C; font-weight:600;}
-  .play-again{font-family:'Fredoka',cursive; font-weight:800; font-size:19px; padding:11px 32px; border-radius:99px; border:4px solid var(--gold-dark); background:var(--gold); color:var(--navy); cursor:pointer; box-shadow:0 5px 0 var(--gold-dark);}
-  .play-again:active{transform:translateY(4px); box-shadow:none;}
-  .post-game-row{display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px; margin-bottom:4px;}
-  .play-again-icon{font-size:22px; line-height:1; padding:11px 14px; border-radius:99px; border:4px solid var(--gold-dark); background:var(--gold); color:var(--navy); cursor:pointer; box-shadow:0 5px 0 var(--gold-dark); flex:0 0 auto;}
-  .play-again-icon:active{transform:translateY(4px); box-shadow:none;}
-  .continue-match-btn{font-family:'Fredoka',cursive; font-weight:800; font-size:16px; padding:11px 20px; border-radius:99px; border:4px solid var(--blue); background:linear-gradient(180deg,var(--blue-soft),var(--blue)); color:#fff; cursor:pointer; box-shadow:0 5px 0 var(--navy); flex:1 1 auto;}
-  .continue-match-btn:active{transform:translateY(4px); box-shadow:none;}
-  .share-btn{font-family:'Fredoka',cursive; font-weight:800; font-size:14px; padding:11px 16px; border-radius:99px; border:3px solid var(--navy); background:linear-gradient(180deg,#6FB23F,var(--grass-dark)); color:#fff; cursor:pointer; box-shadow:0 4px 0 var(--navy); flex:1 1 auto; white-space:nowrap;}
-  .share-btn:active{transform:translateY(3px); box-shadow:none;}
-  .mode-card{padding:22px 34px 26px;}
-  .mode-btns{display:flex; flex-direction:column; gap:12px; margin-top:6px;}
-  .mode-btn{font-family:'Fredoka',cursive; font-weight:800; font-size:18px; padding:13px 20px; border-radius:16px; border:none; cursor:pointer; color:#fff; box-shadow:0 5px 0 rgba(0,0,0,.25);}
-  .mode-btn:active{transform:translateY(4px); box-shadow:none;}
-  .mode-btn-a{background:linear-gradient(180deg,var(--blue-soft),var(--blue));}
-  .mode-btn-b{background:linear-gradient(180deg,#E85C5C,var(--red));}
-  .mode-sub{font-size:12px; opacity:.85; font-weight:600; margin-top:2px;}
-  .name-input{width:100%; font-family:'Quicksand',sans-serif; font-weight:700; font-size:17px; text-align:center; padding:11px 14px; border-radius:12px; border:3px solid #B9CEE6; color:var(--navy); margin:4px 0 16px; outline:none;}
-  .name-input:focus{border-color:var(--blue);}
-  .search-spinner{width:52px; height:52px; margin:4px auto 12px; border:6px solid #DCE9F8; border-top-color:var(--blue); border-radius:50%; animation:spin 0.85s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  .rewards-card{padding:18px 22px 20px; max-width:520px; max-height:500px; overflow-y:auto;}
-  .rewards-coin-row{display:flex; align-items:center; justify-content:center; gap:6px; font-family:'Fredoka',cursive; font-weight:800; font-size:20px; color:var(--gold-dark); margin-bottom:10px;}
-  .rewards-section-title{font-size:13px; font-weight:800; color:var(--navy); text-align:left; margin:12px 0 8px; text-transform:uppercase; letter-spacing:.5px;}
-  .ribbon-grid{display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
-  .ribbon-item{width:110px; border:3px solid #C3D6EC; border-radius:14px; padding:10px 6px 8px; background:#fff; cursor:pointer;}
-  .ribbon-item.selected{border-color:var(--green-ok); background:#EDFBF1;}
-  .ribbon-item.locked{opacity:.6; cursor:pointer;}
-  .ribbon-swatch{width:30px; height:34px; margin:0 auto 6px; clip-path:polygon(50% 0,100% 18%,72% 55%,100% 100%,50% 62%,0 100%,28% 55%,0 18%);}
-  .ribbon-name{font-size:12px; font-weight:800; color:var(--navy);}
-  .ribbon-cost{font-size:11px; font-weight:700; color:var(--gold-dark); margin-top:2px;}
-  .ribbon-tag{font-size:11px; font-weight:700; color:var(--green-ok); margin-top:2px;}
-  .badge-grid{display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
-  .badge-item{width:96px; border:3px solid #C3D6EC; border-radius:14px; padding:10px 4px 8px; background:#fff; text-align:center;}
-  .badge-item.locked{opacity:.45; filter:grayscale(1);}
-  .badge-icon{font-size:26px;}
-  .badge-name{font-size:11px; font-weight:800; color:var(--navy); margin-top:3px; line-height:1.2;}
-  .rewards-close{display:block; margin:16px auto 0; font-family:'Fredoka',cursive; font-weight:800; font-size:16px; padding:9px 26px; border-radius:99px; border:3px solid var(--navy); background:var(--navy); color:#fff; cursor:pointer;}
-  .chance-btns{display:flex; flex-direction:column; gap:10px; margin-top:10px;}
-  .chance-btn{font-family:'Fredoka',cursive; font-weight:800; font-size:16px; padding:12px 18px; border-radius:14px; border:none; cursor:pointer; color:#fff; box-shadow:0 4px 0 rgba(0,0,0,.25);}
-  .chance-btn:active{transform:translateY(3px); box-shadow:none;}
-  .chance-btn-coins{background:linear-gradient(180deg,var(--gold),var(--gold-dark)); color:var(--navy);}
-  .chance-btn-coins:disabled{opacity:.45; cursor:not-allowed;}
-  .chance-btn-ad{background:linear-gradient(180deg,var(--blue-soft),var(--blue));}
-  .rank-row{font-size:12px; font-weight:800; color:var(--navy); background:#EAF2FC; border-radius:99px; padding:5px 14px; margin:0 auto 8px; display:inline-block;}
-  .confetti-piece{position:absolute; top:-10px; width:8px; height:14px; opacity:.9; pointer-events:none; animation:confetti-fall linear forwards; z-index:60;}
-  @keyframes confetti-fall{to{transform:translateY(620px) rotate(540deg); opacity:0;}}
-  .wheel-wrap{position:relative; width:210px; height:210px; margin:6px auto 16px;}
-  .wheel-pointer{position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:22px; z-index:5;}
-  .wheel{width:210px; height:210px; border-radius:50%; border:6px solid var(--navy); position:relative; background:conic-gradient(#F5C542 0deg 72deg,#4FCB2F 72deg 144deg,#9AA7B8 144deg 216deg,#FF6B6B 216deg 288deg,#3E84E6 288deg 360deg); transition:transform 3.2s cubic-bezier(.17,.67,.32,1.02); box-shadow:0 6px 0 rgba(0,0,0,.3);}
-  .wheel-seg-label{position:absolute; top:50%; left:50%; width:64px; margin-left:-32px; margin-top:-30px; text-align:center; font-size:11px; font-weight:800; color:#0F2440; line-height:1.15;}
-  .wheel-seg-label span{display:inline-block;}
-  .spin-go-btn{margin:0 auto 8px; display:block;}
-  .spin-cooldown{font-size:11px; font-weight:700; color:#5A7391; margin-top:-4px; margin-bottom:8px;}
-  .ad-ring{width:64px; height:64px; margin:6px auto 14px; border:7px solid #DCE9F8; border-top-color:var(--blue); border-radius:50%; animation:spin 1s linear infinite;}
+  /* ---------- CHANCE-EXHAUSTED OVERLAY ---------- */
+  .chance-btns{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+  .chance-btn{
+    font-family:'Fredoka',cursive; font-weight:800; font-size:16px;
+    padding:12px 18px; border-radius:14px; border:none; cursor:pointer; color:#fff;
+    box-shadow:0 4px 0 rgba(0,0,0,.25);
+  }
+  .chance-btn:active{ transform:translateY(3px); box-shadow:none; }
+  .chance-btn-coins{ background:linear-gradient(180deg,var(--gold),var(--gold-dark)); color:var(--navy); }
+  .chance-btn-coins:disabled{ opacity:.45; cursor:not-allowed; }
+  .chance-btn-ad{ background:linear-gradient(180deg,var(--blue-soft),var(--blue)); }
+
+  /* ---------- RANK / DAILY SPIN (rewards screen additions) ---------- */
+  .rank-row{ font-size:12px; font-weight:800; color:var(--navy); background:#EAF2FC; border-radius:99px; padding:5px 14px; margin:0 auto 8px; display:inline-block; }
+  .name-badge{ font-size:14px; margin-left:2px; }
+  .confetti-piece{
+    position:absolute; top:-10px; width:8px; height:14px; opacity:.9;
+    pointer-events:none; animation:confetti-fall linear forwards; z-index:60;
+  }
+  @keyframes confetti-fall{ to{ transform:translateY(620px) rotate(540deg); opacity:0; } }
+
+  /* ---------- AD OVERLAY (simulated) ---------- */
+  .ad-ring{
+    width:64px; height:64px; margin:6px auto 14px;
+    border:7px solid #DCE9F8; border-top-color:var(--blue);
+    border-radius:50%; animation:spin 1s linear infinite;
+  }
 </style>
 </head>
 <body>
@@ -378,46 +696,6 @@
     <div class="rope-zone">
       <div class="rope"></div>
       <div class="ribbon" id="ribbon" style="left:50%"></div>
-
-      <!-- Team A 3D Character (boy, blue) -->
-      <div class="char char-a" id="charA">
-        <div class="char-shadow"></div>
-        <div class="head">
-          <div class="eye l"></div>
-          <div class="eye r"></div>
-          <div class="cheek l"></div>
-          <div class="cheek r"></div>
-          <div class="mouth"></div>
-        </div>
-        <div class="torso"></div>
-        <div class="arm-back"></div>
-        <div class="arm-front"></div>
-        <div class="grip"></div>
-        <div class="leg l"></div>
-        <div class="leg r"></div>
-        <div class="foot l"></div>
-        <div class="foot r"></div>
-      </div>
-
-      <!-- Team B 3D Character (girl, red) -->
-      <div class="char char-b" id="charB">
-        <div class="char-shadow"></div>
-        <div class="head">
-          <div class="eye l"></div>
-          <div class="eye r"></div>
-          <div class="cheek l"></div>
-          <div class="cheek r"></div>
-          <div class="mouth"></div>
-        </div>
-        <div class="torso"></div>
-        <div class="arm-back"></div>
-        <div class="arm-front"></div>
-        <div class="grip"></div>
-        <div class="leg l"></div>
-        <div class="leg r"></div>
-        <div class="foot l"></div>
-        <div class="foot r"></div>
-      </div>
     </div>
   </div>
 
@@ -447,6 +725,7 @@
       <div class="win-trophy">🏆</div>
       <h2 id="winTitle">Team A wins!</h2>
       <p id="winSub">Pulled the ribbon all the way over.</p>
+
       <div class="post-game-row">
         <button class="play-again-icon" id="playAgainBtn" title="Play again">🔁</button>
         <button class="continue-match-btn" id="continueMatchBtn" style="display:none;">Continue Match</button>
@@ -492,20 +771,6 @@
       <div class="rewards-coin-row">🪙 <span id="rewardsCoinCount">0</span></div>
       <div class="rank-row" id="rankRow"></div>
       <button class="chance-btn chance-btn-ad" id="rewardsWatchAdBtn" style="margin:0 auto 4px;display:block;">📺 Watch Ad (+25 coins)</button>
-
-      <div class="rewards-section-title">🎡 Daily Spin</div>
-      <div class="wheel-wrap">
-        <div class="wheel-pointer">▼</div>
-        <div class="wheel" id="spinWheel">
-          <div class="wheel-seg-label" style="transform:rotate(36deg) translateY(-72px) rotate(-36deg);"><span>10</span></div>
-          <div class="wheel-seg-label" style="transform:rotate(108deg) translateY(-72px) rotate(-108deg);"><span>5</span></div>
-          <div class="wheel-seg-label" style="transform:rotate(180deg) translateY(-72px) rotate(-180deg);"><span>😢</span></div>
-          <div class="wheel-seg-label" style="transform:rotate(252deg) translateY(-72px) rotate(-252deg);"><span>50</span></div>
-          <div class="wheel-seg-label" style="transform:rotate(324deg) translateY(-72px) rotate(-324deg);"><span>25</span></div>
-        </div>
-      </div>
-      <div class="spin-cooldown" id="spinResult"></div>
-      <button class="chance-btn chance-btn-coins spin-go-btn" id="dailySpinBtn">🎡 Spin Now</button>
 
       <div class="rewards-section-title">Rope Colors</div>
       <div class="ribbon-grid" id="ribbonGrid"></div>
@@ -559,6 +824,15 @@
     </div>
   </div>
 
+  <div class="overlay" id="mysteryBoxOverlay">
+    <div class="win-card mode-card">
+      <div class="win-trophy mystery-box-icon" id="mysteryBoxIcon">🎁</div>
+      <h2 id="mysteryBoxTitle">Daily Mystery Box!</h2>
+      <p class="mode-sub" id="mysteryBoxSub">Tap the box to open today's reward</p>
+      <button class="play-again" id="mysteryBoxContinueBtn" style="display:none;">Continue</button>
+    </div>
+  </div>
+
   <div class="coin-toast" id="coinToast"></div>
   <div class="badge-toast" id="badgeToast"></div>
 
@@ -567,6 +841,7 @@
 
 <script>
 (function(){
+  // ---- play counter ----
   (function trackPlay(){
     try{
       const key = location.origin + location.pathname;
@@ -574,6 +849,7 @@
     }catch(e){}
   })();
 
+  // ---- Telegram Mini App setup ----
   if(window.Telegram && window.Telegram.WebApp){
     const tg = window.Telegram.WebApp;
     tg.ready();
@@ -584,13 +860,18 @@
     try{ tg.requestFullscreen(); }catch(e){}
   }
 
+  // ---- FIT THE FIXED CANVAS TO ANY SCREEN ----
+  // The design size never changes, so nothing can overlap and nothing
+  // balloons on a big screen. Only the zoom level changes per device.
   const DESIGN_W = 900, DESIGN_H = 560;
-  const MAX_SCALE = 1.3;
+  const MAX_SCALE = 1.3;   // keeps the keypad from getting huge on laptops
   const stage = document.getElementById('stage');
 
   function fitStage(){
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    // A tall screen (phone held upright) gets the canvas turned sideways,
+    // so the player just rotates the phone and everything already fits.
     const rotate = vh > vw;
     const availW = rotate ? vh : vw;
     const availH = rotate ? vw : vh;
@@ -602,6 +883,7 @@
   window.addEventListener('resize', fitStage);
   window.addEventListener('orientationchange', function(){ setTimeout(fitStage, 200); });
 
+  // ---- sound effects (synth, no audio files needed) ----
   const SFX = (function(){
     let ctx;
     let enabled = true;
@@ -635,25 +917,36 @@
       isEnabled: function(){ return enabled; },
       setEnabled: function(v){ enabled = v; },
       key: function(){ tone(520, 0.06, {type:'square', vol:0.08}); },
-      correct: function(){ tone(660, 0.09, {type:'triangle', vol:0.16}); tone(880, 0.12, {type:'triangle', vol:0.16, delay:0.09}); },
+      correct: function(){
+        tone(660, 0.09, {type:'triangle', vol:0.16});
+        tone(880, 0.12, {type:'triangle', vol:0.16, delay:0.09});
+      },
       wrong: function(){ tone(160, 0.18, {type:'sawtooth', vol:0.12, slideTo:90}); },
       tick: function(){ tone(1000, 0.05, {type:'square', vol:0.06}); },
-      win: function(){ [523,659,784,1047].forEach(function(f,i){ tone(f, 0.22, {type:'triangle', vol:0.18, delay:i*0.13}); }); }
+      win: function(){
+        [523,659,784,1047].forEach(function(f,i){
+          tone(f, 0.22, {type:'triangle', vol:0.18, delay:i*0.13});
+        });
+      }
     };
   })();
+  // unlock audio on first touch/click (required by mobile browsers)
   ['touchstart','click'].forEach(function(ev){
     window.addEventListener(ev, function once(){ SFX.unlock(); window.removeEventListener(ev, once); }, {once:true});
   });
 
+  // ---- game state ----
   const LIMIT = 5;
   const ROUND_TIME = 10000;
-  const INDIAN_NAMES = ['Rahul','Amit','Rohan','Vikram','Suresh','Ankit','Arjun','Karan','Manoj','Deepak','Sanjay','Nikhil','Priya','Neha','Pooja','Kavita','Sneha','Anjali','Ritu','Simran'];
+  const INDIAN_NAMES = ['Rahul','Amit','Rohan','Vikram','Suresh','Ankit','Arjun','Karan','Manoj','Deepak',
+    'Sanjay','Nikhil','Priya','Neha','Pooja','Kavita','Sneha','Anjali','Ritu','Simran'];
 
-  let mode = null;
+  let mode = null;          // 'friend' or 'online'
   let playerName = 'You';
   let opponentName = 'Rahul';
   let aiTimeout = null;
 
+  // ---- reward system: coins, ribbon unlocks, badges (persisted in localStorage) ----
   const RIBBONS = [
     { id:'red',     name:'Classic Red', cost:0,   color:'var(--red)' },
     { id:'gold',    name:'Gold',        cost:100, color:'linear-gradient(160deg,#FFE9A0,#F5C542)' },
@@ -674,6 +967,9 @@
     { id:'fire',  name:'On Fire',  cost:120, icon:'🔥' },
     { id:'star',  name:'Star',     cost:120, icon:'⭐' }
   ];
+  // Automatic level badge, earned purely by match wins (not purchasable) — shown
+  // next to the player's name in the blue HUD box only (never in the keypad
+  // title). Checked highest-first.
   const LEVEL_BADGES = [
     { min:50, name:'Warlord',  icon:'⚔️' },
     { min:40, name:'Elite',    icon:'🎖️' },
@@ -683,17 +979,18 @@
     { min:5,  name:'Bronze',   icon:'🥉' },
     { min:1,  name:'Starter',  icon:'💡' }
   ];
+  // Same list, lowest-first — used to roll a comparable badge for the rival
+  // (red box), so their rank badge sits near the player's own level.
   const LEVEL_BADGES_ASC = LEVEL_BADGES.slice().reverse();
-  const SPIN_SEGMENTS = [
-    { id:'c10',  coins:10, weight:30 },
-    { id:'c5',   coins:5,  weight:36 },
-    { id:'miss', coins:0,  weight:20, message:'😢 Better luck next time!' },
-    { id:'c50',  coins:50, weight:0  },
-    { id:'c25',  coins:25, weight:14 }
-  ];
   const LOGIN_REWARDS = [10,15,20,25,30,40,60];
   const SAVE_KEY = 'brainExerciseSave';
 
+  // =========================================================================
+  // FIREBASE SETUP — fill this in with YOUR Firebase project's config
+  // (Firebase Console → Project Settings → General → Your apps → Web app).
+  // Game works fine on localStorage alone even if this stays unfilled or if
+  // the network/login fails — Firebase only ADDS cross-device progress sync.
+  // =========================================================================
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyDYIypY0z_su1q27yi-8-820wv5rTLT_4E",
     authDomain: "mathtugofwar-2abc3.firebaseapp.com",
@@ -726,16 +1023,18 @@
       selectedNameBadge: d.selectedNameBadge || 'none',
       lastLoginDate: d.lastLoginDate || null,
       loginStreak: d.loginStreak || 0,
-      lastSpinTime: d.lastSpinTime || 0,
       highestRankNotified: d.highestRankNotified || 0,
       rankDemotion: d.rankDemotion || 0,
       consecutiveMatchLosses: d.consecutiveMatchLosses || 0,
-      keypadSide: d.keypadSide || 'right'
+      keypadSide: d.keypadSide || 'right',
+      playerName: d.playerName || ''
     };
   }
   let save = loadSave();
   function persistSave(){
+    // Always write locally first (instant, works offline).
     try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
+    // Then debounce a write up to Firestore, if signed in.
     if(cloudSyncEnabled && firebaseUid){
       clearTimeout(cloudSaveTimeout);
       cloudSaveTimeout = setTimeout(function(){
@@ -746,9 +1045,16 @@
     }
   }
 
+  /**
+   * Signs the player in via their Telegram identity (no separate login
+   * screen needed) and pulls their cloud-saved progress, if any. Silently
+   * does nothing if Firebase isn't configured yet, if there's no network,
+   * or if the app isn't running inside Telegram — the game keeps working
+   * on localStorage in all of those cases.
+   */
   async function initFirebaseAndLogin(){
     try{
-      if(FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") return;
+      if(FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") return; // not configured yet
       if(!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.initData) return;
 
       fbApp = firebase.initializeApp(FIREBASE_CONFIG);
@@ -782,43 +1088,47 @@
           selectedNameBadge: d.selectedNameBadge || 'none',
           lastLoginDate: d.lastLoginDate || null,
           loginStreak: d.loginStreak || 0,
-          lastSpinTime: d.lastSpinTime || 0,
           highestRankNotified: d.highestRankNotified || 0,
           rankDemotion: d.rankDemotion || 0,
           consecutiveMatchLosses: d.consecutiveMatchLosses || 0,
-          keypadSide: d.keypadSide || 'right'
+          keypadSide: d.keypadSide || 'right',
+          playerName: d.playerName || ''
         };
-        persistSave();
+        persistSave(); // keep localStorage mirror in sync too
         updateCoinDisplay();
         applyRibbonColor();
         applyLayoutSide();
       }
     }catch(err){
+      // Any failure here (no internet, function not deployed yet, etc.)
+      // just means we stay on localStorage-only progress for this session.
       console.warn('Firebase login skipped:', err);
     }
   }
 
-  let chancesLeftA = 3;
-  let perfectStreakCount = 0;
-  let wrongStreakA = 0;
+  let chancesLeftA = 3;          // wrong-attempt chances on the CURRENT question
+  let perfectStreakCount = 0;    // consecutive correct answers this match, no misses
+
+  // adaptive difficulty state (Play Online): AI speed reacts to how the user is doing
+  let wrongStreakA = 0;          // consecutive wrong tries by the user in THIS round
   let aiHandicappedThisRound = false;
-  let helpUserNextRound = false;
-  let userTimeSamples = [];
+  let helpUserNextRound = false; // if true, next round: easier for user, harder for AI
+  let userTimeSamples = [];      // recent correct-answer times for the user (ms)
   let roundStartTime = 0;
-  let userGamesPlayed = 0;
-  let pityActive = false;
-  let pityBlocksUsed = 0;
-  let userCorrectCount = 0;
-  let userWrongCount = 0;
-  let totalSolved = 0;
-  let userRoundStreak = 0;
-  let userMissStreak = 0;
-  let hardBurstRounds = 0;
+  let userGamesPlayed = 0;       // games started in Play Online, this session
+  let pityActive = false;        // when true, the AI can't quite land the finishing pull
+  let pityBlocksUsed = 0;        // how many times pity has already blocked a finishing answer this match
+  let userCorrectCount = 0;      // this match: user's correct answers
+  let userWrongCount = 0;        // this match: user's wrong tries
+  let totalSolved = 0;           // this match: questions solved by BOTH sides combined — drives progression
+  let userRoundStreak = 0;       // consecutive ROUNDS the user has solved first
+  let userMissStreak = 0;        // consecutive ROUNDS the user has failed to solve
+  let hardBurstRounds = 0;       // remaining rounds where the user's own question is deliberately hard
 
   let position = 0;
   let roundActive = true;
   let gameOver = true;
-  let pendingChestReward = 0;
+  let pendingChestReward = 0;     // coins waiting inside an unopened milestone chest
   let qA, qB;
   let answerA = '', answerB = '';
   let solvedA = 0, solvedB = 0;
@@ -865,55 +1175,10 @@
   const rankRowEl = document.getElementById('rankRow');
   const winfxGridEl = document.getElementById('winfxGrid');
   const nameBadgeGridEl = document.getElementById('nameBadgeGrid');
-  const spinWheelEl = document.getElementById('spinWheel');
-  const spinResultEl = document.getElementById('spinResult');
-  const dailySpinBtnEl = document.getElementById('dailySpinBtn');
   const chestOverlay = document.getElementById('chestOverlay');
   const chestSubEl = document.getElementById('chestSub');
 
-  const charA = document.getElementById('charA');
-  const charB = document.getElementById('charB');
-
-  function startIdleAnim(){
-    charA.classList.add('play-idle');
-    charB.classList.add('play-idle');
-  }
-  function stopIdleAnim(){
-    charA.classList.remove('play-idle');
-    charB.classList.remove('play-idle');
-  }
-  function animatePull(side){
-    const ch = side === 'A' ? charA : charB;
-    ch.classList.remove('pulling');
-    void ch.offsetWidth;
-    ch.classList.add('pulling');
-    setTimeout(function(){ ch.classList.remove('pulling'); }, 650);
-  }
-  function animateWin(winner){
-    stopIdleAnim();
-    const winnerChar = winner === 'A' ? charA : charB;
-    const loserChar  = winner === 'A' ? charB : charA;
-    winnerChar.classList.remove('pulling','play-idle','losing');
-    winnerChar.classList.add('celebrating');
-    loserChar.classList.remove('celebrating','play-idle','pulling');
-    loserChar.classList.add('losing');
-  }
-  function resetCharAnim(){
-    stopIdleAnim();
-    [charA, charB].forEach(function(c){
-      c.classList.remove('celebrating','losing','pulling','play-idle');
-    });
-    startIdleAnim();
-  }
-  function updateCharsAlongRope(){
-    // position: -5 (A winning) to +5 (B winning)
-    // A moves left when winning; B moves right when winning.
-    const aShift = position < 0 ? position * 5 : 0;
-    const bShift = position > 0 ? position * 5 : 0;
-    charA.style.marginLeft = aShift + 'px';
-    charB.style.marginRight = bShift + 'px';
-  }
-
+  // ---- coin + reward helpers ----
   function updateCoinDisplay(){
     coinCountEl.textContent = save.coins;
     rewardsCoinCountEl.textContent = save.coins;
@@ -967,6 +1232,7 @@
     const d = new Date();
     return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
   }
+  // True tier the player has EARNED by career wins (-1 = Rookie, 0 = Starter ... 6 = Warlord).
   function trueTierIndex(){
     for(let i=0;i<LEVEL_BADGES.length;i++){
       if(save.careerWins >= LEVEL_BADGES[i].min){
@@ -975,6 +1241,8 @@
     }
     return -1;
   }
+  // Effective tier after applying any rank demotion (5 losses in a row = drop one tier).
+  // Earned wins are never erased - this only softens the CURRENT badge/difficulty.
   function effectiveTierIndex(){
     const t = trueTierIndex();
     if(t < 0) return -1;
@@ -987,14 +1255,17 @@
   function getRank(){
     return getLevelBadge() || { name:'Rookie', icon:'🌱' };
   }
+  // Starting question difficulty by rank (Online mode only): Rookie/Starter start
+  // easy, then each tier nudges the number ranges up, through Bronze/Silver/Gold,
+  // to Diamond/Elite/Warlord at the hard end.
   const RANK_DIFFICULTY = [
-    { level:'easy',   boost:1   },
-    { level:'easy',   boost:1.3 },
-    { level:'normal', boost:1   },
-    { level:'normal', boost:1.3 },
-    { level:'hard',   boost:1   },
-    { level:'hard',   boost:1.3 },
-    { level:'hard',   boost:1.6 }
+    { level:'easy',   boost:1   },  // Starter (and Rookie, before any rank)
+    { level:'easy',   boost:1.3 },  // Bronze - a bit past plain easy
+    { level:'normal', boost:1   },  // Silver
+    { level:'normal', boost:1.3 },  // Gold - a bit past plain normal
+    { level:'hard',   boost:1   },  // Diamond
+    { level:'hard',   boost:1.3 },  // Elite
+    { level:'hard',   boost:1.6 }   // Warlord - hardest
   ];
   function rankDifficulty(){
     const idx = Math.max(0, effectiveTierIndex());
@@ -1004,13 +1275,19 @@
     const b = NAME_BADGES.find(function(x){ return x.id === save.selectedNameBadge; });
     return (b && b.icon) ? (b.icon + ' ') : '';
   }
+  // Blue box (teamNameA) gets the player's level badge; the keypad title
+  // (padTitleA) never shows it.
   function applyNameBadge(){
+    // Rank badges only matter in Online mode (rank = how you compare to other
+    // real opponents). Two friends sharing a device don't need a rank tag.
     const lvl = (mode !== 'friend') ? getLevelBadge() : null;
     const lvlSuffix = lvl ? (' ' + lvl.icon) : '';
     const baseName = (mode === 'friend') ? 'Team A' : playerName;
     teamNameAEl.textContent = nameBadgePrefix() + baseName + lvlSuffix;
     padTitleAEl.textContent = nameBadgePrefix() + baseName;
   }
+  // Red box (teamNameB) gets a rival badge rolled once per match, within
+  // ±2 levels of the player's own rank — never shown in the keypad title.
   let opponentLevelBadge = null;
   function rollOpponentBadge(){
     if(mode === 'friend'){ opponentLevelBadge = null; return; }
@@ -1026,6 +1303,8 @@
     teamNameBEl.textContent = prefix + baseName;
     padTitleBEl.textContent = baseName;
   }
+  // Generic "pick one, unlock with coins" row — used for Win Effects and Name Badges,
+  // the same pattern the Ribbon Colors grid already uses.
   function buildSelectableRow(containerEl, list, unlockedKey, selectedKey, onChanged){
     containerEl.innerHTML = '';
     list.forEach(function(it){
@@ -1060,50 +1339,7 @@
       containerEl.appendChild(item);
     });
   }
-  function pickWeightedSegment(){
-    const total = SPIN_SEGMENTS.reduce(function(s,x){ return s + x.weight; }, 0);
-    let r = Math.random() * total;
-    for(let i=0;i<SPIN_SEGMENTS.length;i++){
-      if(r < SPIN_SEGMENTS[i].weight) return i;
-      r -= SPIN_SEGMENTS[i].weight;
-    }
-    return 0;
-  }
-  const SPIN_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-  let wheelRotation = 0;
-  function refreshDailySpinBtn(){
-    const remain = SPIN_COOLDOWN_MS - (Date.now() - (save.lastSpinTime || 0));
-    if(remain <= 0){
-      dailySpinBtnEl.textContent = '🎡 Spin Now';
-      dailySpinBtnEl.disabled = false;
-    } else {
-      const h = Math.floor(remain / 3600000);
-      const m = Math.floor((remain % 3600000) / 60000);
-      dailySpinBtnEl.textContent = '⏳ Next spin in ' + h + 'h ' + m + 'm';
-      dailySpinBtnEl.disabled = true;
-    }
-  }
-  function spinWheel(){
-    if(Date.now() - (save.lastSpinTime || 0) < SPIN_COOLDOWN_MS) return;
-    dailySpinBtnEl.disabled = true;
-    spinResultEl.textContent = '';
-    const idx = pickWeightedSegment();
-    const seg = SPIN_SEGMENTS[idx];
-    const centerAngle = idx * 72 + 36;
-    wheelRotation += 5 * 360 + ((360 - centerAngle) % 360);
-    spinWheelEl.style.transform = 'rotate(' + wheelRotation + 'deg)';
-    save.lastSpinTime = Date.now();
-    persistSave();
-    setTimeout(function(){
-      if(seg.coins > 0){
-        addCoins(seg.coins);
-        spinResultEl.textContent = '🎉 You won ' + seg.coins + ' 🪙!';
-      } else {
-        spinResultEl.textContent = seg.message || 'Better luck next time!';
-      }
-      refreshDailySpinBtn();
-    }, 3300);
-  }
+  let pendingDailyReward = 0;
   function checkDailyLogin(){
     const today = todayStr();
     if(save.lastLoginDate === today) return;
@@ -1113,11 +1349,25 @@
     save.lastLoginDate = today;
     persistSave();
     const idx = Math.min(save.loginStreak, LOGIN_REWARDS.length) - 1;
-    const reward = LOGIN_REWARDS[idx];
+    pendingDailyReward = LOGIN_REWARDS[idx];
     setTimeout(function(){
-      addCoins(reward);
-      showBadgeToast('🎁 You got ' + reward + ' coins for opening the game today!');
-    }, 900);
+      document.getElementById('mysteryBoxIcon').textContent = '🎁';
+      document.getElementById('mysteryBoxTitle').textContent = 'Daily Mystery Box!';
+      document.getElementById('mysteryBoxSub').textContent = 'Tap the box to open today\'s reward';
+      document.getElementById('mysteryBoxContinueBtn').style.display = 'none';
+      document.getElementById('mysteryBoxOverlay').classList.add('show');
+    }, 700);
+  }
+  function openMysteryBox(){
+    if(pendingDailyReward <= 0) return;
+    const reward = pendingDailyReward;
+    pendingDailyReward = 0;
+    addCoins(reward);
+    document.getElementById('mysteryBoxIcon').textContent = '🎉';
+    document.getElementById('mysteryBoxIcon').classList.remove('mystery-box-icon');
+    document.getElementById('mysteryBoxTitle').textContent = 'You got ' + reward + ' coins!';
+    document.getElementById('mysteryBoxSub').textContent = 'for opening today\'s game. Come back tomorrow for another box!';
+    document.getElementById('mysteryBoxContinueBtn').style.display = 'block';
   }
   function maybeShowMilestoneChest(){
     if(save.careerWins > 0 && save.careerWins % 5 === 0){
@@ -1153,7 +1403,6 @@
     rankRowEl.textContent = r.icon + ' ' + r.name + ' · ' + save.careerWins + ' wins';
     document.getElementById('keypadLeftBtn').style.opacity = (save.keypadSide === 'left') ? '1' : '.55';
     document.getElementById('keypadRightBtn').style.opacity = (save.keypadSide === 'right') ? '1' : '.55';
-    refreshDailySpinBtn();
     buildSelectableRow(winfxGridEl, WINFX, 'unlockedWinFx', 'selectedWinFx', null);
     buildSelectableRow(nameBadgeGridEl, NAME_BADGES, 'unlockedNameBadges', 'selectedNameBadge', applyNameBadge);
     ribbonGridEl.innerHTML = '';
@@ -1198,9 +1447,11 @@
     });
   }
 
+  // ---- coin economy: coins now only come from wins (+25) or watching ads (+25 each) ----
   const CHANCE_COST = 10;
   const AD_REWARD = 25;
 
+  // ---- chance-exhausted flow: spend coins or watch ads to top up, for one more try ----
   function refreshChanceButton(){
     const btn = document.getElementById('chanceUseCoinsBtn');
     btn.disabled = save.coins < CHANCE_COST;
@@ -1214,13 +1465,21 @@
   }
   function resumeAfterChance(){
     chanceOverlay.classList.remove('show');
-    chancesLeftA = 1;
+    chancesLeftA = 1; // one paid try at a time - fail it and the overlay comes right back
     answerA = ''; ansAEl.textContent = ''; ansAEl.className = 'answer-box';
     roundActive = true;
     startTimer();
   }
+  /**
+   * Plays a (simulated) rewarded ad. By default adds AD_REWARD coins on
+   * completion (used by the Rewards screen and Chance overlay); pass
+   * grantCoins=false to just play the ad and skip the coin reward (used by
+   * Continue Match, where watching the ad itself is the reward).
+   */
   function watchAdForCoins(onComplete, grantCoins){
     if(grantCoins === undefined) grantCoins = true;
+    // Real Monetag rewarded ad (zone 11885548). Monetag's SDK shows its own
+    // full-screen ad UI and resolves the promise once it's been watched.
     if(typeof show_11885548 === 'function'){
       show_11885548().then(function(){
         if(grantCoins) addCoins(AD_REWARD);
@@ -1231,6 +1490,8 @@
       });
       return;
     }
+    // Fallback simulated ad - only used if the Monetag script failed to load
+    // (ad blocker, offline, or testing outside Telegram).
     adOverlay.classList.add('show');
     let secLeft = 6;
     adTitleEl.textContent = 'Ad playing...';
@@ -1248,7 +1509,10 @@
     }, 1000);
   }
 
-  function showThinking(v){ aiThinkEl.classList.toggle('show', !!v); }
+
+  function showThinking(v){
+    aiThinkEl.classList.toggle('show', !!v);
+  }
 
   function updateVisual(){
     const dir = (save.keypadSide === 'right') ? -1 : 1;
@@ -1257,15 +1521,16 @@
     pullB.style.width = (Math.max(0,  position) / LIMIT * 100) + '%';
     solvedAEl.textContent = solvedA;
     solvedBEl.textContent = solvedB;
-    updateCharsAlongRope();
   }
 
   function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 
   function makeQuestion(level, tier, rankBoost){
     level = level || 'normal';
-    tier = tier || 0;
+    tier = tier || 0;   // 0 = normal, 1 = harder (20+ solved), 2 = advanced ops unlocked (30+ solved)
     const boost = (tier >= 2 ? 1.8 : (tier >= 1 ? 1.35 : 1)) * (rankBoost || 1);
+
+    // Once the match has gone on a while, mix in square / cube / square-root questions
     if(tier >= 2 && level !== 'easy' && Math.random() < 0.35) return makeAdvancedQuestion(level);
 
     let op;
@@ -1312,9 +1577,11 @@
     return {text:text, answer:String(answer), op:op, a:a, b:0};
   }
 
+  // Progression: as the match goes on, questions gradually get harder for BOTH
+  // players, in both Play with Friend and Play Online — then advanced ops unlock.
   function currentTier(){
-    if(totalSolved >= 30) return 2;
-    if(totalSolved >= 20) return 1;
+    if(totalSolved >= 30) return 2;   // square / cube / square-root start appearing
+    if(totalSolved >= 20) return 1;   // bigger numbers on the standard ops
     return 0;
   }
 
@@ -1326,14 +1593,16 @@
     aiHandicappedThisRound = false;
     roundStartTime = performance.now();
 
+    // Rank sets the BASE difficulty in Online mode (Starter=easy ... Warlord=hardest).
+    // Friend mode always stays at plain 'normal' - rank doesn't apply there.
     const rd = (mode === 'online') ? rankDifficulty() : { level:'normal', boost:1 };
     let levelA = rd.level, levelB = rd.level, boostA = rd.boost, boostB = rd.boost;
     if(mode === 'online' && helpUserNextRound){
-      levelA = 'easy'; boostA = 1;
-      levelB = 'hard'; boostB = 1;
+      levelA = 'easy'; boostA = 1;   // user was struggling last round — give them a breather
+      levelB = 'hard'; boostB = 1;   // AI genuinely gets a harder sum, which naturally slows it down
       helpUserNextRound = false;
     } else if(mode === 'online' && hardBurstRounds > 0){
-      levelA = 'hard'; boostA = 1;
+      levelA = 'hard'; boostA = 1;   // early hot streak — challenge the user for a couple of rounds
       hardBurstRounds--;
     }
     const tier = currentTier();
@@ -1343,19 +1612,30 @@
     qBEl.textContent = qB.text + ' = ?';
     ansAEl.textContent = ''; ansAEl.className = 'answer-box';
     ansBEl.textContent = ''; ansBEl.className = 'answer-box';
+    const dotA = document.getElementById('dotA');
+    const dotB = document.getElementById('dotB');
+    if(dotA) dotA.textContent = (qA.op === 'sqrt') ? '√' : '.';
+    if(dotB) dotB.textContent = (qB.op === 'sqrt') ? '√' : '.';
     startTimer();
     if(mode === 'online') scheduleAI(levelB === 'hard');
     else showThinking(false);
   }
 
+  // ---- AI opponent (Play Online mode) : speed adapts to how the user is actually playing ----
+  // Genuinely randomized — no fixed "addition = X seconds" rule, so it doesn't
+  // feel mechanical. Slightly weighted by how big the numbers are and by how
+  // the user is doing, but the spread is wide enough that no two questions
+  // (even the same type) play out the same way.
   function aiThinkTime(q, assist){
     const totalTries = userCorrectCount + userWrongCount;
     const missRate = totalTries ? (userWrongCount / totalTries) : 0;
+
     const digits = String(q.a).length + (q.b ? String(q.b).length : 0);
     let baseTime = randInt(1800, 6200) + digits * randInt(250, 550);
-    baseTime += missRate * randInt(700, 2600);
-    if(assist) baseTime += 1800 + randInt(300, 2200);
+    baseTime += missRate * randInt(700, 2600);           // user struggling → AI eases off, unpredictably
+    if(assist) baseTime += 1800 + randInt(300, 2200);     // mid-round comeback assist
     const extraSlip = missRate * 0.35;
+
     return { time: Math.max(1200, Math.min(baseTime, 12000)), extraSlip: extraSlip };
   }
 
@@ -1426,6 +1706,9 @@
     if(val === '') return;
 
     if(val === q.answer){
+      // Pity guard: eases the AI off the finishing pull a couple of times so a
+      // fresh player isn't steamrolled — but it can only block a HANDFUL of
+      // genuine correct finishes. Keep solving and the AI WILL close it out.
       if(side === 'B' && pityActive && (position + 1) >= LIMIT && pityBlocksUsed < 2){
         pityBlocksUsed++;
         SFX.wrong();
@@ -1446,8 +1729,6 @@
       box.classList.add('flash');
       setTimeout(function(){ box.classList.remove('flash'); }, 500);
 
-      animatePull(side);
-
       if(side === 'A'){
         solvedA++;
         position = Math.max(-LIMIT, position - 1);
@@ -1458,16 +1739,19 @@
         userTimeSamples.push(elapsed);
         if(userTimeSamples.length > 5) userTimeSamples.shift();
 
+        // ---- reward: career stats + badges (coins now only come from wins/ads) ----
         save.careerCorrect++;
         perfectStreakCount++;
         if(elapsed <= 5000) save.gotSpeed = true;
         if(perfectStreakCount >= 5) save.gotPerfect = true;
         checkBadges();
+        // From the 3rd game onward, playing well enough (25+ solved) earns the win
         if(mode === 'online' && userGamesPlayed >= 3 && solvedA >= 25) pityActive = true;
 
         if(mode === 'online'){
           userMissStreak = 0;
           userRoundStreak++;
+          // Early hot streak (still under ~6-7 solved) — throw a couple of hard ones in
           if(userRoundStreak >= 3 && solvedA <= 8) hardBurstRounds = 2;
         }
       } else {
@@ -1476,6 +1760,7 @@
         if(mode === 'online'){
           userRoundStreak = 0;
           userMissStreak++;
+          // Well into the match but cold for 3 rounds straight — let the AI actually close it out
           if(userMissStreak >= 3 && solvedA > 20) pityActive = false;
         }
       }
@@ -1495,7 +1780,7 @@
         perfectStreakCount = 0;
         if(wrongStreakA >= 2 && mode === 'online' && !aiHandicappedThisRound && roundActive){
           aiHandicappedThisRound = true;
-          helpUserNextRound = true;
+          helpUserNextRound = true; // next round: easier question for the user, harder for the AI
         }
         chancesLeftA--;
         if(chancesLeftA <= 0){
@@ -1517,10 +1802,10 @@
 
   function handleKey(side, key){
     if(!roundActive || gameOver) return;
-    if(side === 'B' && mode === 'online') return;
+    if(side === 'B' && mode === 'online') return; // AI controls this side in online mode
     SFX.key();
     const q = side === 'A' ? qA : qB;
-    if(key === 'dot' && q && q.op === 'sqrt') return;
+    if(key === 'dot' && q && q.op === 'sqrt') return; // shows √ for this question — decorative, no input needed
 
     if(side === 'A'){
       if(key === 'del') answerA = answerA.slice(0,-1);
@@ -1544,6 +1829,7 @@
       if(k === 'del'){ btn.classList.add('back'); btn.textContent = '⌫'; }
       else if(k === 'dot'){ btn.classList.add('go'); btn.textContent = '.'; btn.id = 'dot' + side; }
       else btn.textContent = k;
+      // touchstart so two players tapping at the same instant both register
       btn.addEventListener('touchstart', function(e){
         e.preventDefault();
         handleKey(side, k);
@@ -1561,8 +1847,6 @@
     showThinking(false);
     SFX.win();
     spawnWinEffect();
-    animateWin(winner);
-
     const winnerName = winner === 'A' ? teamNameAEl.textContent : teamNameBEl.textContent;
     winTitle.textContent = winnerName + ' wins!';
     let subText = 'Solved ' + (winner === 'A' ? solvedA : solvedB) + ' problems and pulled the ribbon across.';
@@ -1575,6 +1859,8 @@
       subText += ' +25 🪙 bonus!';
       maybeShowMilestoneChest();
     } else if(mode === 'online'){
+      // 5 online losses in a row eases the difficulty back down one rank tier,
+      // without touching career wins/badges earned so far.
       save.consecutiveMatchLosses = (save.consecutiveMatchLosses || 0) + 1;
       if(save.consecutiveMatchLosses >= 5){
         const beforeIdx = effectiveTierIndex();
@@ -1632,10 +1918,13 @@
     rollOpponentBadge();
     applyOpponentName();
     applyNameBadge();
-    resetCharAnim();
 
     if(mode === 'online'){
       userGamesPlayed++;
+      // The user's very first game plays out naturally. Their 2nd game is a
+      // guaranteed win (keeps a brand-new player from bouncing off a loss
+      // streak). From the 3rd game on, a win has to be earned — see the
+      // 25-solved check in submitAnswer.
       pityActive = (userGamesPlayed === 2);
     } else {
       pityActive = false;
@@ -1685,19 +1974,33 @@
     else { muteBtn.textContent = '🔇'; muteBtn.classList.add('muted'); }
   });
 
+  // ---- mode selection ----
   document.getElementById('btnFriend').addEventListener('click', function(){
     SFX.unlock();
     setMode('friend');
   });
+  function telegramDefaultName(){
+    try{
+      const u = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+      if(u) return (u.first_name || u.username || '').slice(0,14);
+    }catch(e){}
+    return '';
+  }
   document.getElementById('btnOnline').addEventListener('click', function(){
     SFX.unlock();
     modeOverlay.classList.remove('show');
     nameOverlay.classList.add('show');
-    setTimeout(function(){ nameInput.focus(); }, 200);
+    // Remembers the last name used on this device so regulars don't have to
+    // retype it - but it's still a normal editable box, so if someone else
+    // picks up the same phone they can just clear it and type their own.
+    nameInput.value = save.playerName || telegramDefaultName();
+    setTimeout(function(){ nameInput.focus(); nameInput.select(); }, 200);
   });
   function startOnline(){
     const val = nameInput.value.trim();
     playerName = val ? val.slice(0,14) : 'You';
+    save.playerName = playerName;
+    persistSave();
     opponentName = INDIAN_NAMES[randInt(0, INDIAN_NAMES.length - 1)];
 
     nameOverlay.classList.remove('show');
@@ -1727,7 +2030,6 @@
     nameOverlay.classList.remove('show');
     searchOverlay.classList.remove('show');
     modeOverlay.classList.add('show');
-    stopIdleAnim();
   });
 
   document.getElementById('rewardsBtn').addEventListener('click', function(){
@@ -1764,8 +2066,6 @@
     }
   });
 
-  dailySpinBtnEl.addEventListener('click', spinWheel);
-
   document.getElementById('chestOpenBtn').addEventListener('click', function(){
     addCoins(pendingChestReward);
     chestSubEl.textContent = 'You got ' + pendingChestReward + ' 🪙! Come back after 5 more wins for another chest.';
@@ -1780,10 +2080,13 @@
   applyRibbonColor();
   applyLayoutSide();
   updateVisual();
-  refreshDailySpinBtn();
+  document.getElementById('mysteryBoxIcon').addEventListener('click', openMysteryBox);
+  document.getElementById('mysteryBoxContinueBtn').addEventListener('click', function(){
+    document.getElementById('mysteryBoxOverlay').classList.remove('show');
+  });
+
   checkDailyLogin();
   initFirebaseAndLogin();
-  startIdleAnim();
 })();
 </script>
 
