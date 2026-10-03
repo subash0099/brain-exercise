@@ -449,6 +449,8 @@
     box-shadow:0 10px 0 rgba(0,0,0,.35);
   }
   .win-trophy{ font-size:58px; line-height:1; }
+  .mystery-box-icon{ cursor:pointer; animation:boxPulse 1.2s ease-in-out infinite; }
+  @keyframes boxPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.1); } }
   .win-card h2{
     font-family:'Fredoka',cursive;
     font-size:30px;
@@ -639,32 +641,6 @@
   }
   @keyframes confetti-fall{ to{ transform:translateY(620px) rotate(540deg); opacity:0; } }
 
-  /* ---------- SPIN WHEEL ---------- */
-  .spin-card{ padding-bottom:18px; }
-  .wheel-wrap{ position:relative; width:210px; height:210px; margin:6px auto 16px; }
-  .wheel-pointer{ position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:22px; z-index:5; }
-  .wheel{
-    width:210px; height:210px; border-radius:50%;
-    border:6px solid var(--navy);
-    position:relative;
-    background:conic-gradient(
-      #F5C542 0deg 72deg,
-      #4FCB2F 72deg 144deg,
-      #9AA7B8 144deg 216deg,
-      #FF6B6B 216deg 288deg,
-      #3E84E6 288deg 360deg
-    );
-    transition:transform 3.2s cubic-bezier(.17,.67,.32,1.02);
-    box-shadow:0 6px 0 rgba(0,0,0,.3);
-  }
-  .wheel-seg-label{
-    position:absolute; top:50%; left:50%; width:64px; margin-left:-32px; margin-top:-30px;
-    text-align:center; font-size:11px; font-weight:800; color:#0F2440; line-height:1.15;
-  }
-  .wheel-seg-label span{ display:inline-block; }
-  .spin-go-btn{ margin:0 auto 8px; display:block; }
-  .spin-cooldown{ font-size:11px; font-weight:700; color:#5A7391; margin-top:-4px; margin-bottom:8px; }
-
   /* ---------- AD OVERLAY (simulated) ---------- */
   .ad-ring{
     width:64px; height:64px; margin:6px auto 14px;
@@ -796,20 +772,6 @@
       <div class="rank-row" id="rankRow"></div>
       <button class="chance-btn chance-btn-ad" id="rewardsWatchAdBtn" style="margin:0 auto 4px;display:block;">📺 Watch Ad (+25 coins)</button>
 
-      <div class="rewards-section-title">🎡 Daily Spin</div>
-      <div class="wheel-wrap">
-        <div class="wheel-pointer">▼</div>
-        <div class="wheel" id="spinWheel">
-          <div class="wheel-seg-label" style="transform:rotate(36deg) translateY(-72px) rotate(-36deg);"><span>10</span></div>
-          <div class="wheel-seg-label" style="transform:rotate(108deg) translateY(-72px) rotate(-108deg);"><span>5</span></div>
-          <div class="wheel-seg-label" style="transform:rotate(180deg) translateY(-72px) rotate(-180deg);"><span>😢</span></div>
-          <div class="wheel-seg-label" style="transform:rotate(252deg) translateY(-72px) rotate(-252deg);"><span>50</span></div>
-          <div class="wheel-seg-label" style="transform:rotate(324deg) translateY(-72px) rotate(-324deg);"><span>25</span></div>
-        </div>
-      </div>
-      <div class="spin-cooldown" id="spinResult"></div>
-      <button class="chance-btn chance-btn-coins spin-go-btn" id="dailySpinBtn">🎡 Spin Now</button>
-
       <div class="rewards-section-title">Rope Colors</div>
       <div class="ribbon-grid" id="ribbonGrid"></div>
 
@@ -859,6 +821,15 @@
       <div class="ad-ring"></div>
       <h2 id="adTitle">Ad playing...</h2>
       <p class="mode-sub" id="adSub">Please wait 6s</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="mysteryBoxOverlay">
+    <div class="win-card mode-card">
+      <div class="win-trophy mystery-box-icon" id="mysteryBoxIcon">🎁</div>
+      <h2 id="mysteryBoxTitle">Daily Mystery Box!</h2>
+      <p class="mode-sub" id="mysteryBoxSub">Tap the box to open today's reward</p>
+      <button class="play-again" id="mysteryBoxContinueBtn" style="display:none;">Continue</button>
     </div>
   </div>
 
@@ -1011,17 +982,6 @@
   // Same list, lowest-first — used to roll a comparable badge for the rival
   // (red box), so their rank badge sits near the player's own level.
   const LEVEL_BADGES_ASC = LEVEL_BADGES.slice().reverse();
-  // Daily Spin wheel segments, laid out clockwise starting at the top (matches
-  // the conic-gradient slice order in .wheel's CSS). "50" is a decoy — its
-  // weight is 0 so the wheel visually offers it but can never actually land
-  // there, purely to keep the player spinning. "25" is intentionally rare.
-  const SPIN_SEGMENTS = [
-    { id:'c10',  coins:10, weight:30 },
-    { id:'c5',   coins:5,  weight:36 },
-    { id:'miss', coins:0,  weight:20, message:'😢 Better luck next time!' },
-    { id:'c50',  coins:50, weight:0  },
-    { id:'c25',  coins:25, weight:14 }
-  ];
   const LOGIN_REWARDS = [10,15,20,25,30,40,60];
   const SAVE_KEY = 'brainExerciseSave';
 
@@ -1063,11 +1023,11 @@
       selectedNameBadge: d.selectedNameBadge || 'none',
       lastLoginDate: d.lastLoginDate || null,
       loginStreak: d.loginStreak || 0,
-      lastSpinTime: d.lastSpinTime || 0,
       highestRankNotified: d.highestRankNotified || 0,
       rankDemotion: d.rankDemotion || 0,
       consecutiveMatchLosses: d.consecutiveMatchLosses || 0,
-      keypadSide: d.keypadSide || 'right'
+      keypadSide: d.keypadSide || 'right',
+      playerName: d.playerName || ''
     };
   }
   let save = loadSave();
@@ -1128,11 +1088,11 @@
           selectedNameBadge: d.selectedNameBadge || 'none',
           lastLoginDate: d.lastLoginDate || null,
           loginStreak: d.loginStreak || 0,
-          lastSpinTime: d.lastSpinTime || 0,
           highestRankNotified: d.highestRankNotified || 0,
           rankDemotion: d.rankDemotion || 0,
           consecutiveMatchLosses: d.consecutiveMatchLosses || 0,
-          keypadSide: d.keypadSide || 'right'
+          keypadSide: d.keypadSide || 'right',
+          playerName: d.playerName || ''
         };
         persistSave(); // keep localStorage mirror in sync too
         updateCoinDisplay();
@@ -1215,9 +1175,6 @@
   const rankRowEl = document.getElementById('rankRow');
   const winfxGridEl = document.getElementById('winfxGrid');
   const nameBadgeGridEl = document.getElementById('nameBadgeGrid');
-  const spinWheelEl = document.getElementById('spinWheel');
-  const spinResultEl = document.getElementById('spinResult');
-  const dailySpinBtnEl = document.getElementById('dailySpinBtn');
   const chestOverlay = document.getElementById('chestOverlay');
   const chestSubEl = document.getElementById('chestSub');
 
@@ -1382,50 +1339,7 @@
       containerEl.appendChild(item);
     });
   }
-  function pickWeightedSegment(){
-    const total = SPIN_SEGMENTS.reduce(function(s,x){ return s + x.weight; }, 0);
-    let r = Math.random() * total;
-    for(let i=0;i<SPIN_SEGMENTS.length;i++){
-      if(r < SPIN_SEGMENTS[i].weight) return i;
-      r -= SPIN_SEGMENTS[i].weight;
-    }
-    return 0;
-  }
-  const SPIN_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-  let wheelRotation = 0;
-  function refreshDailySpinBtn(){
-    const remain = SPIN_COOLDOWN_MS - (Date.now() - (save.lastSpinTime || 0));
-    if(remain <= 0){
-      dailySpinBtnEl.textContent = '🎡 Spin Now';
-      dailySpinBtnEl.disabled = false;
-    } else {
-      const h = Math.floor(remain / 3600000);
-      const m = Math.floor((remain % 3600000) / 60000);
-      dailySpinBtnEl.textContent = '⏳ Next spin in ' + h + 'h ' + m + 'm';
-      dailySpinBtnEl.disabled = true;
-    }
-  }
-  function spinWheel(){
-    if(Date.now() - (save.lastSpinTime || 0) < SPIN_COOLDOWN_MS) return;
-    dailySpinBtnEl.disabled = true;
-    spinResultEl.textContent = '';
-    const idx = pickWeightedSegment();
-    const seg = SPIN_SEGMENTS[idx];
-    const centerAngle = idx * 72 + 36;
-    wheelRotation += 5 * 360 + ((360 - centerAngle) % 360);
-    spinWheelEl.style.transform = 'rotate(' + wheelRotation + 'deg)';
-    save.lastSpinTime = Date.now();
-    persistSave();
-    setTimeout(function(){
-      if(seg.coins > 0){
-        addCoins(seg.coins);
-        spinResultEl.textContent = '🎉 You won ' + seg.coins + ' 🪙!';
-      } else {
-        spinResultEl.textContent = seg.message || 'Better luck next time!';
-      }
-      refreshDailySpinBtn();
-    }, 3300);
-  }
+  let pendingDailyReward = 0;
   function checkDailyLogin(){
     const today = todayStr();
     if(save.lastLoginDate === today) return;
@@ -1435,11 +1349,25 @@
     save.lastLoginDate = today;
     persistSave();
     const idx = Math.min(save.loginStreak, LOGIN_REWARDS.length) - 1;
-    const reward = LOGIN_REWARDS[idx];
+    pendingDailyReward = LOGIN_REWARDS[idx];
     setTimeout(function(){
-      addCoins(reward);
-      showBadgeToast('🎁 You got ' + reward + ' coins for opening the game today!');
-    }, 900);
+      document.getElementById('mysteryBoxIcon').textContent = '🎁';
+      document.getElementById('mysteryBoxTitle').textContent = 'Daily Mystery Box!';
+      document.getElementById('mysteryBoxSub').textContent = 'Tap the box to open today\'s reward';
+      document.getElementById('mysteryBoxContinueBtn').style.display = 'none';
+      document.getElementById('mysteryBoxOverlay').classList.add('show');
+    }, 700);
+  }
+  function openMysteryBox(){
+    if(pendingDailyReward <= 0) return;
+    const reward = pendingDailyReward;
+    pendingDailyReward = 0;
+    addCoins(reward);
+    document.getElementById('mysteryBoxIcon').textContent = '🎉';
+    document.getElementById('mysteryBoxIcon').classList.remove('mystery-box-icon');
+    document.getElementById('mysteryBoxTitle').textContent = 'You got ' + reward + ' coins!';
+    document.getElementById('mysteryBoxSub').textContent = 'for opening today\'s game. Come back tomorrow for another box!';
+    document.getElementById('mysteryBoxContinueBtn').style.display = 'block';
   }
   function maybeShowMilestoneChest(){
     if(save.careerWins > 0 && save.careerWins % 5 === 0){
@@ -1475,7 +1403,6 @@
     rankRowEl.textContent = r.icon + ' ' + r.name + ' · ' + save.careerWins + ' wins';
     document.getElementById('keypadLeftBtn').style.opacity = (save.keypadSide === 'left') ? '1' : '.55';
     document.getElementById('keypadRightBtn').style.opacity = (save.keypadSide === 'right') ? '1' : '.55';
-    refreshDailySpinBtn();
     buildSelectableRow(winfxGridEl, WINFX, 'unlockedWinFx', 'selectedWinFx', null);
     buildSelectableRow(nameBadgeGridEl, NAME_BADGES, 'unlockedNameBadges', 'selectedNameBadge', applyNameBadge);
     ribbonGridEl.innerHTML = '';
@@ -2052,15 +1979,28 @@
     SFX.unlock();
     setMode('friend');
   });
+  function telegramDefaultName(){
+    try{
+      const u = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+      if(u) return (u.first_name || u.username || '').slice(0,14);
+    }catch(e){}
+    return '';
+  }
   document.getElementById('btnOnline').addEventListener('click', function(){
     SFX.unlock();
     modeOverlay.classList.remove('show');
     nameOverlay.classList.add('show');
-    setTimeout(function(){ nameInput.focus(); }, 200);
+    // Remembers the last name used on this device so regulars don't have to
+    // retype it - but it's still a normal editable box, so if someone else
+    // picks up the same phone they can just clear it and type their own.
+    nameInput.value = save.playerName || telegramDefaultName();
+    setTimeout(function(){ nameInput.focus(); nameInput.select(); }, 200);
   });
   function startOnline(){
     const val = nameInput.value.trim();
     playerName = val ? val.slice(0,14) : 'You';
+    save.playerName = playerName;
+    persistSave();
     opponentName = INDIAN_NAMES[randInt(0, INDIAN_NAMES.length - 1)];
 
     nameOverlay.classList.remove('show');
@@ -2126,8 +2066,6 @@
     }
   });
 
-  dailySpinBtnEl.addEventListener('click', spinWheel);
-
   document.getElementById('chestOpenBtn').addEventListener('click', function(){
     addCoins(pendingChestReward);
     chestSubEl.textContent = 'You got ' + pendingChestReward + ' 🪙! Come back after 5 more wins for another chest.';
@@ -2142,7 +2080,11 @@
   applyRibbonColor();
   applyLayoutSide();
   updateVisual();
-  refreshDailySpinBtn();
+  document.getElementById('mysteryBoxIcon').addEventListener('click', openMysteryBox);
+  document.getElementById('mysteryBoxContinueBtn').addEventListener('click', function(){
+    document.getElementById('mysteryBoxOverlay').classList.remove('show');
+  });
+
   checkDailyLogin();
   initFirebaseAndLogin();
 })();
