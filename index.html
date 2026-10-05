@@ -237,8 +237,6 @@
     white-space:nowrap;
   }
   .restart-mini:active{ transform:translateY(1px); }
-  #muteBtn{ padding:3px 10px; }
-  #muteBtn.muted{ opacity:.55; }
 
   /* ---------- ARENA ---------- */
   .arena{
@@ -611,13 +609,77 @@
   }
   .badge-item.locked{ opacity:.45; filter:grayscale(1); }
   .badge-icon{ font-size:26px; }
-  .badge-name{ font-size:11px; font-weight:800; color:var(--navy); margin-top:3px; line-height:1.2; }
 
+  /* ---------- CLOSE BUTTONS (same style as other buttons) ---------- */
   .rewards-close{
     display:block; margin:16px auto 0;
     font-family:'Fredoka',cursive; font-weight:800; font-size:16px;
-    padding:9px 26px; border-radius:99px; border:3px solid var(--navy);
-    background:var(--navy); color:#fff; cursor:pointer;
+    padding:12px 30px; border-radius:14px; cursor:pointer;
+    border:none; color:#fff;
+    background:linear-gradient(180deg,var(--blue-soft),var(--blue));
+    box-shadow:0 4px 0 rgba(0,0,0,.25);
+  }
+  .rewards-close:active{ transform:translateY(3px); box-shadow:none; }
+
+  /* ---------- RANK LADDER STRIP ---------- */
+  .rank-strip-wrap{
+    position:relative;
+    overflow:hidden;
+    margin:4px -4px 0;
+    padding:10px 0 2px;
+    cursor:grab;
+    touch-action:pan-y;
+    -webkit-mask-image:linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
+    mask-image:linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
+  }
+  .rank-strip-track{
+    display:flex;
+    will-change:transform;
+  }
+  .rank-step{
+    flex:0 0 auto;
+    text-align:center;
+    padding:2px 2px 6px;
+    position:relative;
+  }
+  .rank-step::before{
+    content:''; position:absolute; left:0; top:4px; bottom:8px;
+    width:2px; background:#C3D6EC;
+  }
+  .rank-step:first-child::before{ display:none; }
+  .rank-step-badge{
+    position:relative; width:54px; height:54px; margin:0 auto 4px;
+  }
+  .rank-star{
+    position:absolute; inset:-7px;
+    clip-path:polygon(50% 0%, 60% 26%, 85.4% 14.6%, 74% 40%, 100% 50%, 74% 60%, 85.4% 85.4%, 60% 74%, 50% 100%, 40% 74%, 14.6% 85.4%, 26% 60%, 0% 50%, 26% 40%, 14.6% 14.6%, 40% 26%);
+    filter:drop-shadow(0 2px 2px rgba(0,0,0,.25));
+  }
+  .rank-core{
+    position:absolute; inset:5px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #3E4C63, #141B26 70%);
+    border:3px solid #fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px;
+    box-shadow:inset 0 -3px 6px rgba(0,0,0,.45);
+  }
+  .rank-step-name{
+    font-size:12px; font-weight:800; color:var(--navy); white-space:nowrap;
+  }
+  .rank-step-wins{
+    font-size:11px; font-weight:600; color:#5A7391; white-space:nowrap;
+  }
+  .rank-step.unearned{ opacity:.4; }
+  .rank-step.unearned .rank-core{ filter:grayscale(.7); }
+  .rank-step.current .rank-step-badge{ transform:scale(1.14); }
+  .rank-step.current .rank-step-name{ color:var(--blue); }
+  .rank-step.current::after{
+    content:'YOU'; position:absolute; top:-2px; left:50%; transform:translateX(-50%);
+    font-size:9px; font-weight:800; color:#7A4A00; white-space:nowrap;
+    background:linear-gradient(180deg,#FFD964,#F5C542);
+    border:2px solid #B8860B;
+    padding:1px 7px; border-radius:99px;
   }
 
   /* ---------- CHANCE-EXHAUSTED OVERLAY ---------- */
@@ -647,6 +709,35 @@
     border:7px solid #DCE9F8; border-top-color:var(--blue);
     border-radius:50%; animation:spin 1s linear infinite;
   }
+
+  /* ---------- SETTINGS PANEL ---------- */
+  .music-vol-row{
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    margin:10px 2px 2px;
+  }
+  .vol-slider{
+    position:relative; flex:1 1 auto; height:30px;
+    display:flex; align-items:center; cursor:pointer;
+    touch-action:none; user-select:none; -webkit-user-select:none;
+  }
+  .vol-track{
+    position:relative; width:100%; height:8px;
+    border-radius:99px; background:#C3D6EC; overflow:hidden;
+  }
+  .vol-fill{
+    position:absolute; left:0; top:0; bottom:0; width:40%;
+    border-radius:99px;
+    background:linear-gradient(90deg,var(--blue-soft),var(--blue));
+  }
+  .vol-knob{
+    position:absolute; left:40%; top:50%;
+    width:22px; height:22px; border-radius:50%;
+    background:#fff; border:3px solid var(--blue);
+    transform:translate(-50%,-50%);
+    box-shadow:0 2px 4px rgba(0,0,0,.25);
+    pointer-events:none;
+  }
+  #soundToggleBtn.off, #musicToggleBtn.off{ opacity:.6; }
 </style>
 </head>
 <body>
@@ -671,8 +762,7 @@
       <div class="timer-label">Time left</div>
       <div class="timer-track"><div class="timer-fill" id="timerFill"></div></div>
       <div class="mini-btn-row">
-        <button class="restart-mini" id="modeBtn">🔀 Mode</button>
-        <button class="restart-mini" id="muteBtn">🔊</button>
+        <button class="restart-mini" id="settingsBtn" title="Settings">⚙️</button>
       </div>
     </div>
 
@@ -767,9 +857,8 @@
   <div class="overlay" id="rewardsOverlay">
     <div class="win-card rewards-card">
       <div class="win-trophy">🎁</div>
-      <h2>Rewards</h2>
+      <h2>Gift Box</h2>
       <div class="rewards-coin-row">🪙 <span id="rewardsCoinCount">0</span></div>
-      <div class="rank-row" id="rankRow"></div>
       <button class="chance-btn chance-btn-ad" id="rewardsWatchAdBtn" style="margin:0 auto 4px;display:block;">📺 Watch Ad (+25 coins)</button>
 
       <div class="rewards-section-title">Rope Colors</div>
@@ -781,8 +870,27 @@
       <div class="rewards-section-title">Name Badge</div>
       <div class="ribbon-grid" id="nameBadgeGrid"></div>
 
+      <button class="rewards-close" id="rewardsCloseBtn">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="settingsOverlay">
+    <div class="win-card rewards-card">
+      <div class="win-trophy">⚙️</div>
+      <h2>Settings</h2>
+      <div class="rank-row" id="settingsRankRow"></div>
+
       <div class="rewards-section-title">Rank Ladder</div>
-      <div class="badge-grid" id="badgeGrid"></div>
+      <div class="rank-strip-wrap" id="rankStripWrap">
+        <div class="rank-strip-track" id="rankStripTrack"></div>
+      </div>
+      <p style="font-size:11px;color:#5A7391;font-weight:600;margin:2px 0 0;text-align:center;">◂ Slide to see all ranks ▸</p>
+
+      <div class="rewards-section-title">Mode</div>
+      <div class="chance-btns" style="flex-direction:row;gap:8px;">
+        <button class="chance-btn chance-btn-ad" id="setFriendBtn" style="flex:1;">👥 Friend</button>
+        <button class="chance-btn chance-btn-coins" id="setOnlineBtn" style="flex:1;">🌐 Online</button>
+      </div>
 
       <div class="rewards-section-title">Keypad Side</div>
       <p style="font-size:11px;color:#5A7391;font-weight:600;margin:-4px 0 8px;text-align:left;">Choose which side your (blue) keypad, question box and name show up on.</p>
@@ -791,7 +899,34 @@
         <button class="chance-btn chance-btn-coins" id="keypadRightBtn" style="flex:1;">Right ➡️</button>
       </div>
 
-      <button class="rewards-close" id="rewardsCloseBtn">Close</button>
+      <div class="rewards-section-title">Sound</div>
+      <button class="chance-btn chance-btn-ad" id="soundToggleBtn" style="width:100%;">🔊 Sound On</button>
+      <div class="music-vol-row">
+        <span>🔈</span>
+        <div class="vol-slider" id="sfxSlider">
+          <div class="vol-track">
+            <div class="vol-fill" id="sfxFill"></div>
+          </div>
+          <div class="vol-knob" id="sfxKnob"></div>
+        </div>
+        <span>🔊</span>
+      </div>
+
+      <div class="rewards-section-title">Music</div>
+      <button class="chance-btn chance-btn-ad" id="musicToggleBtn" style="width:100%;">🎵 Music On</button>
+      <div class="music-vol-row">
+        <span>🔉</span>
+        <div class="vol-slider" id="volSlider">
+          <div class="vol-track">
+            <div class="vol-fill" id="volFill"></div>
+          </div>
+          <div class="vol-knob" id="volKnob"></div>
+        </div>
+        <span>🔊</span>
+      </div>
+      <p style="font-size:11px;color:#5A7391;font-weight:600;margin:4px 0 0;text-align:center;">Slide left for softer · right for louder</p>
+
+      <button class="rewards-close" id="settingsCloseBtn">Close</button>
     </div>
   </div>
 
@@ -886,9 +1021,16 @@
   // ---- sound effects (synth, no audio files needed) ----
   const SFX = (function(){
     let ctx;
+    let master = null;
+    let volume = 100;
     let enabled = true;
     function ac(){
-      if(!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if(!ctx){
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        master = ctx.createGain();
+        master.gain.value = volume / 100;
+        master.connect(ctx.destination);
+      }
       if(ctx.state === 'suspended') ctx.resume();
       return ctx;
     }
@@ -907,7 +1049,7 @@
         gain.gain.setValueAtTime(0.0001, t0);
         gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
         gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-        osc.connect(gain).connect(c.destination);
+        osc.connect(gain).connect(master);
         osc.start(t0);
         osc.stop(t0 + dur + 0.02);
       }catch(e){}
@@ -916,6 +1058,11 @@
       unlock: function(){ try{ ac(); }catch(e){} },
       isEnabled: function(){ return enabled; },
       setEnabled: function(v){ enabled = v; },
+      setVolume: function(v){
+        volume = Math.max(0, Math.min(100, v));
+        if(ctx && master) master.gain.setTargetAtTime(volume / 100, ctx.currentTime, 0.03);
+      },
+      getVolume: function(){ return volume; },
       key: function(){ tone(520, 0.06, {type:'square', vol:0.08}); },
       correct: function(){
         tone(660, 0.09, {type:'triangle', vol:0.16});
@@ -930,9 +1077,98 @@
       }
     };
   })();
+  // ---- calm arpeggio theme (Am - F - C - G), soft pad + plucked notes ----
+  const MUSIC = (function(){
+    let ctx = null, master = null, timer = null, step = 0, playing = false, volume = 40;
+    function ac(){
+      if(!ctx){
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        master = ctx.createGain();
+        master.gain.value = 0.0001;
+        master.connect(ctx.destination);
+      }
+      if(ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    // continuous, smooth volume: one master gain, eased on every change
+    function applyMaster(){
+      if(!ctx || !master) return;
+      master.gain.setTargetAtTime(Math.max(0.0001, (volume / 100) * 0.2), ctx.currentTime, 0.06);
+    }
+    // Am - F - C - G: root plus three chord tones for a flowing arpeggio
+    const PROG = [
+      { bass:110.00, tones:[220.00,261.63,329.63] },
+      { bass:87.31,  tones:[174.61,220.00,261.63] },
+      { bass:130.81, tones:[261.63,329.63,392.00] },
+      { bass:98.00,  tones:[196.00,246.94,293.66] }
+    ];
+    const ARP = [0,1,2,1, 0,2,1,2];
+    function padVoice(freq, t0, dur){
+      const c = ctx;
+      const osc = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+      f.type = 'lowpass'; f.frequency.value = 500;
+      osc.type = 'sine'; osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.4, t0 + 0.8);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(f).connect(g).connect(master);
+      osc.start(t0); osc.stop(t0 + dur + 0.05);
+    }
+    function pluck(freq, t0){
+      const c = ctx;
+      const osc = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+      f.type = 'lowpass'; f.frequency.value = 1800;
+      osc.type = 'triangle'; osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.3, t0 + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.9);
+      osc.connect(f).connect(g).connect(master);
+      osc.start(t0); osc.stop(t0 + 0.95);
+    }
+    function loop(){
+      if(!playing) return;
+      try{
+        const c = ac();
+        applyMaster();
+        const chord = PROG[Math.floor(step / 8) % PROG.length];
+        const t0 = c.currentTime + 0.04;
+        if(step % 8 === 0) padVoice(chord.bass, t0, 4.4);
+        const oct = (step % 16 >= 8) ? 2 : 1;
+        pluck(chord.tones[ARP[step % 8]] * oct, t0);
+      }catch(e){}
+      step++;
+      timer = setTimeout(loop, 470);
+    }
+    return {
+      unlock: function(){ try{ ac(); }catch(e){} },
+      isPlaying: function(){ return playing; },
+      start: function(){
+        if(playing) return;
+        playing = true;
+        try{ ac(); applyMaster(); }catch(e){}
+        loop();
+      },
+      stop: function(){
+        playing = false;
+        clearTimeout(timer);
+        if(ctx && master) master.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.12);
+      },
+      setVolume: function(v){ volume = Math.max(0, Math.min(100, v)); applyMaster(); },
+      getVolume: function(){ return volume; }
+    };
+  })();
+  function maybeStartMusic(){
+    if(save && save.musicOn && !MUSIC.isPlaying()) MUSIC.start();
+  }
+
   // unlock audio on first touch/click (required by mobile browsers)
   ['touchstart','click'].forEach(function(ev){
-    window.addEventListener(ev, function once(){ SFX.unlock(); window.removeEventListener(ev, once); }, {once:true});
+    window.addEventListener(ev, function once(){
+      SFX.unlock();
+      MUSIC.unlock();
+      maybeStartMusic();
+      window.removeEventListener(ev, once);
+    }, {once:true});
   });
 
   // ---- game state ----
@@ -1027,7 +1263,10 @@
       rankDemotion: d.rankDemotion || 0,
       consecutiveMatchLosses: d.consecutiveMatchLosses || 0,
       keypadSide: d.keypadSide || 'right',
-      playerName: d.playerName || ''
+      playerName: d.playerName || '',
+      musicOn: d.musicOn !== undefined ? !!d.musicOn : true,
+      musicVol: (d.musicVol != null) ? d.musicVol : 40,
+      sfxVol: (d.sfxVol != null) ? d.sfxVol : 100
     };
   }
   let save = loadSave();
@@ -1092,7 +1331,10 @@
           rankDemotion: d.rankDemotion || 0,
           consecutiveMatchLosses: d.consecutiveMatchLosses || 0,
           keypadSide: d.keypadSide || 'right',
-          playerName: d.playerName || ''
+          playerName: d.playerName || '',
+          musicOn: d.musicOn !== undefined ? !!d.musicOn : true,
+          musicVol: (d.musicVol != null) ? d.musicVol : 40,
+          sfxVol: (d.sfxVol != null) ? d.sfxVol : 100
         };
         persistSave(); // keep localStorage mirror in sync too
         updateCoinDisplay();
@@ -1167,12 +1409,11 @@
   const rewardsOverlay = document.getElementById('rewardsOverlay');
   const rewardsCoinCountEl = document.getElementById('rewardsCoinCount');
   const ribbonGridEl = document.getElementById('ribbonGrid');
-  const badgeGridEl = document.getElementById('badgeGrid');
   const chanceOverlay = document.getElementById('chanceOverlay');
   const adOverlay = document.getElementById('adOverlay');
   const adTitleEl = document.getElementById('adTitle');
   const adSubEl = document.getElementById('adSub');
-  const rankRowEl = document.getElementById('rankRow');
+  const settingsOverlay = document.getElementById('settingsOverlay');
   const winfxGridEl = document.getElementById('winfxGrid');
   const nameBadgeGridEl = document.getElementById('nameBadgeGrid');
   const chestOverlay = document.getElementById('chestOverlay');
@@ -1252,8 +1493,41 @@
     const idx = effectiveTierIndex();
     return idx >= 0 ? LEVEL_BADGES_ASC[idx] : null;
   }
+  // 35-rank ladder: 7 tiers x (V..I), PUBG style
+  const RANK_LADDER = (function(){
+    const tiers = [
+      { name:'Starter', icon:'💡', c1:'#FFE9A0', c2:'#D9B54A', base:0  },
+      { name:'Bronze',  icon:'🥉', c1:'#D08A4E', c2:'#8C5A2B', base:5  },
+      { name:'Silver',  icon:'🥈', c1:'#D7DEE8', c2:'#8E99A8', base:10 },
+      { name:'Gold',    icon:'🥇', c1:'#FFD766', c2:'#C8901A', base:20 },
+      { name:'Diamond', icon:'💎', c1:'#9FE0FF', c2:'#3E8FD1', base:30 },
+      { name:'Elite',   icon:'🎖️', c1:'#D9B8FF', c2:'#8B4FD1', base:40 },
+      { name:'Warlord', icon:'⚔️', c1:'#FF9A8A', c2:'#C0392B', base:50 }
+    ];
+    const nextBase = [5, 10, 20, 30, 40, 50, 60];
+    const roman = ['V','IV','III','II','I'];
+    const list = [];
+    tiers.forEach(function(t, ti){
+      const span = nextBase[ti] - t.base;
+      roman.forEach(function(r, ri){
+        list.push({
+          name: t.name + ' ' + r,
+          icon: t.icon, c1: t.c1, c2: t.c2,
+          wins: Math.round(t.base + span * ri / 5)
+        });
+      });
+    });
+    return list;
+  })();
+  function currentRankIndex(){
+    let idx = 0;
+    for(let i = 0; i < RANK_LADDER.length; i++){
+      if(save.careerWins >= RANK_LADDER[i].wins) idx = i;
+    }
+    return idx;
+  }
   function getRank(){
-    return getLevelBadge() || { name:'Rookie', icon:'🌱' };
+    return RANK_LADDER[currentRankIndex()];
   }
   // Starting question difficulty by rank (Online mode only): Rookie/Starter start
   // easy, then each tier nudges the number ranges up, through Bronze/Silver/Gold,
@@ -1399,10 +1673,6 @@
     }
   }
   function buildRewardsScreen(){
-    const r = getRank();
-    rankRowEl.textContent = r.icon + ' ' + r.name + ' · ' + save.careerWins + ' wins';
-    document.getElementById('keypadLeftBtn').style.opacity = (save.keypadSide === 'left') ? '1' : '.55';
-    document.getElementById('keypadRightBtn').style.opacity = (save.keypadSide === 'right') ? '1' : '.55';
     buildSelectableRow(winfxGridEl, WINFX, 'unlockedWinFx', 'selectedWinFx', null);
     buildSelectableRow(nameBadgeGridEl, NAME_BADGES, 'unlockedNameBadges', 'selectedNameBadge', applyNameBadge);
     ribbonGridEl.innerHTML = '';
@@ -1436,16 +1706,114 @@
       ribbonGridEl.appendChild(item);
     });
 
-    badgeGridEl.innerHTML = '';
-    const effIdx = effectiveTierIndex();
-    LEVEL_BADGES_ASC.forEach(function(lv, idx){
-      const earned = idx <= effIdx;
-      const item = document.createElement('div');
-      item.className = 'badge-item' + (earned ? '' : ' locked');
-      item.innerHTML = '<div class="badge-icon">' + lv.icon + '</div><div class="badge-name">' + lv.name + '</div>';
-      badgeGridEl.appendChild(item);
+  }
+  function buildSettingsPanel(){
+    const r = getRank();
+    document.getElementById('settingsRankRow').textContent = r.icon + ' ' + r.name + ' · ' + save.careerWins + ' wins';
+    document.getElementById('keypadLeftBtn').style.opacity = (save.keypadSide === 'left') ? '1' : '.55';
+    document.getElementById('keypadRightBtn').style.opacity = (save.keypadSide === 'right') ? '1' : '.55';
+    const sndOn = SFX.isEnabled();
+    const soundBtn = document.getElementById('soundToggleBtn');
+    soundBtn.textContent = sndOn ? '🔊 Sound On' : '🔇 Sound Off';
+    soundBtn.classList.toggle('off', !sndOn);
+    SFX.setVolume(save.sfxVol != null ? save.sfxVol : 100);
+    sfxSetUI(save.sfxVol != null ? save.sfxVol : 100);
+    MUSIC.setVolume(save.musicVol != null ? save.musicVol : 40);
+    const musicBtn = document.getElementById('musicToggleBtn');
+    musicBtn.textContent = MUSIC.isPlaying() ? '🎵 Music On' : '🎵 Music Off';
+    musicBtn.classList.toggle('off', !MUSIC.isPlaying());
+    setVolUI(MUSIC.getVolume());
+    buildRankStrip();
+  }
+  // ---- rank strip: 5 visible, drag left/right to see the rest ----
+  const RANK_VISIBLE = 5;
+  let rankStepW = 0, rankOffset = 0, rankDrag = null, rankMarks = null;
+  function buildRankStrip(){
+    const track = document.getElementById('rankStripTrack');
+    if(!track) return;
+    track.innerHTML = '';
+    const cur = currentRankIndex();
+    RANK_LADDER.forEach(function(r, i){
+      const d = document.createElement('div');
+      d.className = 'rank-step' + (i === cur ? ' current' : (i < cur ? ' earned' : ' unearned'));
+      d.innerHTML =
+        '<div class="rank-step-badge">' +
+          '<div class="rank-star" style="background:linear-gradient(135deg,' + r.c1 + ',' + r.c2 + ')"></div>' +
+          '<div class="rank-core" style="border-color:' + r.c1 + '">' + r.icon + '</div>' +
+        '</div>' +
+        '<div class="rank-step-name">' + r.name + '</div>' +
+        '<div class="rank-step-wins">' + r.wins + (r.wins === 1 ? ' win' : ' wins') + '</div>';
+      track.appendChild(d);
     });
   }
+  function layoutRankStrip(){
+    const wrap = document.getElementById('rankStripWrap');
+    const track = document.getElementById('rankStripTrack');
+    if(!wrap || !track) return;
+    const w = wrap.clientWidth;
+    if(w < 50) return;                    // panel not visible yet
+    rankStepW = Math.floor(w / RANK_VISIBLE);
+    Array.prototype.forEach.call(track.children, function(ch){ ch.style.width = rankStepW + 'px'; });
+    const maxStart = RANK_LADDER.length - RANK_VISIBLE;
+    const start = Math.max(0, Math.min(maxStart, currentRankIndex() - 2));
+    rankOffset = -start * rankStepW;
+    track.style.transition = 'none';
+    track.style.transform = 'translateX(' + rankOffset + 'px)';
+  }
+  function rankAxisInfo(){
+    const wrap = document.getElementById('rankStripWrap');
+    if(!wrap) return null;
+    if(!rankMarks){
+      rankMarks = [document.createElement('div'), document.createElement('div')];
+      rankMarks.forEach(function(m, i){
+        m.style.cssText = 'position:absolute;top:0;left:' + (i ? '100%' : '0') + ';width:0;height:0;pointer-events:none;';
+        wrap.appendChild(m);
+      });
+    }
+    const r0 = rankMarks[0].getBoundingClientRect();
+    const r1 = rankMarks[1].getBoundingClientRect();
+    const dx = r1.left - r0.left, dy = r1.top - r0.top;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if(len < 1 || wrap.clientWidth < 50) return null;
+    return { x0: r0.left, y0: r0.top, ux: dx / len, uy: dy / len, perLocal: wrap.clientWidth / len };
+  }
+  function rankDragStart(x, y){
+    const a = rankAxisInfo();
+    if(!a) return;
+    document.getElementById('rankStripTrack').style.transition = 'none';
+    rankDrag = { a: a, p0: x * a.ux + y * a.uy, off0: rankOffset };
+  }
+  function rankDragMove(x, y){
+    if(!rankDrag || rankStepW < 10) return;
+    const a = rankDrag.a;
+    const proj = (x * a.ux + y * a.uy) - rankDrag.p0;  // screen px along the strip axis
+    const local = proj * a.perLocal;                   // -> local px (rotation/scale safe)
+    const minOff = -(RANK_LADDER.length - RANK_VISIBLE) * rankStepW;
+    rankOffset = Math.max(minOff - 30, Math.min(30, rankDrag.off0 + local));
+    document.getElementById('rankStripTrack').style.transform = 'translateX(' + rankOffset + 'px)';
+  }
+  function rankDragEnd(){
+    if(!rankDrag) return;
+    rankDrag = null;
+    if(rankStepW < 10) return;
+    const maxStart = RANK_LADDER.length - RANK_VISIBLE;
+    const idx = Math.max(0, Math.min(maxStart, Math.round(-rankOffset / rankStepW)));
+    rankOffset = -idx * rankStepW;
+    const track = document.getElementById('rankStripTrack');
+    track.style.transition = 'transform .25s ease-out';
+    track.style.transform = 'translateX(' + rankOffset + 'px)';
+  }
+  (function(){
+    const wrap = document.getElementById('rankStripWrap');
+    if(!wrap) return;
+    wrap.addEventListener('mousedown', function(e){ e.preventDefault(); rankDragStart(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', function(e){ rankDragMove(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', rankDragEnd);
+    wrap.addEventListener('touchstart', function(e){ rankDragStart(e.touches[0].clientX, e.touches[0].clientY); }, {passive:true});
+    wrap.addEventListener('touchmove', function(e){ e.preventDefault(); rankDragMove(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+    wrap.addEventListener('touchend', rankDragEnd);
+    wrap.addEventListener('touchcancel', rankDragEnd);
+  })();
 
   // ---- coin economy: coins now only come from wins (+25) or watching ads (+25 each) ----
   const CHANCE_COST = 10;
@@ -1966,12 +2334,172 @@
   }
   document.getElementById('shareBtn').addEventListener('click', shareScore);
 
-  const muteBtn = document.getElementById('muteBtn');
-  muteBtn.addEventListener('click', function(){
+  // ---- settings panel: gear opens it; game pauses while it is open ----
+  let settingsWasActive = false;
+  document.getElementById('settingsBtn').addEventListener('click', function(){
+    settingsWasActive = roundActive && !gameOver;
+    if(settingsWasActive){
+      roundActive = false;
+      cancelAnimationFrame(timerRAF);
+      clearTimeout(aiTimeout);
+      showThinking(false);
+    }
+    buildSettingsPanel();
+    settingsOverlay.classList.add('show');
+    requestAnimationFrame(function(){ layoutRankStrip(); });
+  });
+  document.getElementById('settingsCloseBtn').addEventListener('click', function(){
+    settingsOverlay.classList.remove('show');
+    if(settingsWasActive && !gameOver){
+      settingsWasActive = false;
+      roundActive = true;
+      startTimer();
+      if(mode === 'online') scheduleAI(false);
+    }
+  });
+  document.getElementById('soundToggleBtn').addEventListener('click', function(){
     const on = !SFX.isEnabled();
     SFX.setEnabled(on);
-    if(on){ SFX.unlock(); muteBtn.textContent = '🔊'; muteBtn.classList.remove('muted'); }
-    else { muteBtn.textContent = '🔇'; muteBtn.classList.add('muted'); }
+    if(on) SFX.unlock();
+    buildSettingsPanel();
+  });
+  // ---- SFX volume slider: same projection-based drag as the music slider ----
+  function sfxSetUI(pct){
+    pct = Math.max(0, Math.min(100, pct));
+    const fill = document.getElementById('sfxFill');
+    const knob = document.getElementById('sfxKnob');
+    if(fill) fill.style.width = pct + '%';
+    if(knob) knob.style.left = pct + '%';
+  }
+  let sfxDragging = false, sfxSaveTimeout = null, sfxMark0 = null, sfxMark1 = null;
+  function ensureSfxMarks(slider){
+    if(sfxMark0 && sfxMark1) return;
+    sfxMark0 = document.createElement('div');
+    sfxMark1 = document.createElement('div');
+    [sfxMark0, sfxMark1].forEach(function(m, i){
+      m.style.cssText = 'position:absolute;top:50%;left:' + (i ? '100%' : '0') +
+        ';width:0;height:0;pointer-events:none;';
+      slider.appendChild(m);
+    });
+  }
+  function applySfxVolFromPoint(clientX, clientY){
+    const slider = document.getElementById('sfxSlider');
+    if(!slider) return;
+    ensureSfxMarks(slider);
+    const r0 = sfxMark0.getBoundingClientRect();
+    const r1 = sfxMark1.getBoundingClientRect();
+    const x0 = r0.left, y0 = r0.top;
+    const dx = r1.left - x0, dy = r1.top - y0;
+    const len2 = dx * dx + dy * dy;
+    if(len2 < 1) return;
+    let pct = ((clientX - x0) * dx + (clientY - y0) * dy) / len2 * 100;
+    pct = Math.max(0, Math.min(100, pct));
+    sfxSetUI(pct);
+    save.sfxVol = Math.round(pct);
+    SFX.setVolume(save.sfxVol);
+    SFX.key();   // tick sound so the user HEARS the level while sliding
+    clearTimeout(sfxSaveTimeout);
+    sfxSaveTimeout = setTimeout(persistSave, 300);
+  }
+  function sfxDragStart(x, y){ sfxDragging = true; applySfxVolFromPoint(x, y); }
+  function sfxDragMove(x, y){ if(sfxDragging) applySfxVolFromPoint(x, y); }
+  function sfxDragEnd(){ if(sfxDragging){ sfxDragging = false; persistSave(); } }
+  (function(){
+    const slider = document.getElementById('sfxSlider');
+    if(!slider) return;
+    slider.addEventListener('mousedown', function(e){ e.preventDefault(); sfxDragStart(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', function(e){ sfxDragMove(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', sfxDragEnd);
+    slider.addEventListener('touchstart', function(e){ e.preventDefault(); sfxDragStart(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+    slider.addEventListener('touchmove', function(e){ e.preventDefault(); sfxDragMove(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+    slider.addEventListener('touchend', sfxDragEnd);
+    slider.addEventListener('touchcancel', sfxDragEnd);
+  })();
+  document.getElementById('musicToggleBtn').addEventListener('click', function(){
+    if(MUSIC.isPlaying()){
+      MUSIC.stop();
+      save.musicOn = false;
+    } else {
+      MUSIC.unlock();
+      MUSIC.setVolume(save.musicVol != null ? save.musicVol : 40);
+      MUSIC.start();
+      save.musicOn = true;
+    }
+    persistSave();
+    buildSettingsPanel();
+  });
+  // ---- custom volume slider: drag with mouse OR touch, updates live ----
+  // IMPORTANT: the whole game stage may be rotated 90deg and scaled to fit
+  // the phone, so plain clientX/rect math breaks (volume jumps randomly).
+  // Instead we measure the slider's REAL on-screen axis using two invisible
+  // marks at its 0% and 100% ends, then project the pointer onto that axis.
+  function setVolUI(pct){
+    pct = Math.max(0, Math.min(100, pct));
+    const fill = document.getElementById('volFill');
+    const knob = document.getElementById('volKnob');
+    if(fill) fill.style.width = pct + '%';
+    if(knob) knob.style.left = pct + '%';
+  }
+  let volDragging = false, volSaveTimeout = null;
+  let volMark0 = null, volMark1 = null;
+  function ensureVolMarks(slider){
+    if(volMark0 && volMark1) return;
+    volMark0 = document.createElement('div');
+    volMark1 = document.createElement('div');
+    [volMark0, volMark1].forEach(function(m, i){
+      m.style.cssText = 'position:absolute;top:50%;left:' + (i ? '100%' : '0') +
+        ';width:0;height:0;pointer-events:none;';
+      slider.appendChild(m);
+    });
+  }
+  function applyVolFromPoint(clientX, clientY){
+    const slider = document.getElementById('volSlider');
+    if(!slider) return;
+    ensureVolMarks(slider);
+    const r0 = volMark0.getBoundingClientRect();
+    const r1 = volMark1.getBoundingClientRect();
+    const x0 = r0.left, y0 = r0.top;
+    const dx = r1.left - x0, dy = r1.top - y0;
+    const len2 = dx * dx + dy * dy;
+    if(len2 < 1) return;   // slider not laid out yet
+    let pct = ((clientX - x0) * dx + (clientY - y0) * dy) / len2 * 100;
+    pct = Math.max(0, Math.min(100, pct));
+    setVolUI(pct);
+    save.musicVol = Math.round(pct);
+    MUSIC.setVolume(save.musicVol);
+    if(save.musicOn && !MUSIC.isPlaying()) MUSIC.start();
+    clearTimeout(volSaveTimeout);
+    volSaveTimeout = setTimeout(persistSave, 300);
+  }
+  function volDragStart(x, y){ volDragging = true; applyVolFromPoint(x, y); }
+  function volDragMove(x, y){ if(volDragging) applyVolFromPoint(x, y); }
+  function volDragEnd(){ if(volDragging){ volDragging = false; persistSave(); } }
+  (function(){
+    const slider = document.getElementById('volSlider');
+    if(!slider) return;
+    // mouse drag
+    slider.addEventListener('mousedown', function(e){ e.preventDefault(); volDragStart(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', function(e){ volDragMove(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', volDragEnd);
+    // touch drag
+    slider.addEventListener('touchstart', function(e){ e.preventDefault(); volDragStart(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+    slider.addEventListener('touchmove', function(e){ e.preventDefault(); volDragMove(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+    slider.addEventListener('touchend', volDragEnd);
+    slider.addEventListener('touchcancel', volDragEnd);
+  })();
+  document.getElementById('setFriendBtn').addEventListener('click', function(){
+    SFX.unlock();
+    settingsWasActive = false;
+    settingsOverlay.classList.remove('show');
+    setMode('friend');
+  });
+  document.getElementById('setOnlineBtn').addEventListener('click', function(){
+    SFX.unlock();
+    settingsWasActive = false;
+    settingsOverlay.classList.remove('show');
+    nameOverlay.classList.add('show');
+    nameInput.value = save.playerName || telegramDefaultName();
+    setTimeout(function(){ nameInput.focus(); nameInput.select(); }, 200);
   });
 
   // ---- mode selection ----
@@ -2021,17 +2549,6 @@
   document.getElementById('btnStartOnline').addEventListener('click', startOnline);
   nameInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') startOnline(); });
 
-  document.getElementById('modeBtn').addEventListener('click', function(){
-    cancelAnimationFrame(timerRAF);
-    clearTimeout(aiTimeout);
-    showThinking(false);
-    gameOver = true;
-    overlay.classList.remove('show');
-    nameOverlay.classList.remove('show');
-    searchOverlay.classList.remove('show');
-    modeOverlay.classList.add('show');
-  });
-
   document.getElementById('rewardsBtn').addEventListener('click', function(){
     buildRewardsScreen();
     rewardsOverlay.classList.add('show');
@@ -2041,11 +2558,11 @@
   });
   document.getElementById('keypadLeftBtn').addEventListener('click', function(){
     setKeypadSide('left');
-    buildRewardsScreen();
+    buildSettingsPanel();
   });
   document.getElementById('keypadRightBtn').addEventListener('click', function(){
     setKeypadSide('right');
-    buildRewardsScreen();
+    buildSettingsPanel();
   });
   document.getElementById('rewardsWatchAdBtn').addEventListener('click', function(){
     watchAdForCoins(function(){ buildRewardsScreen(); });
@@ -2076,6 +2593,7 @@
     }, 1600);
   });
 
+  SFX.setVolume(save.sfxVol != null ? save.sfxVol : 100);
   updateCoinDisplay();
   applyRibbonColor();
   applyLayoutSide();
